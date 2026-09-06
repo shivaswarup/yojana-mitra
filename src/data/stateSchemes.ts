@@ -802,56 +802,6 @@ export const STATE_SCHEMES: Scheme[] = [
     tags: ['rajasthan', 'state scheme', 'education', 'anuprati', 'free coaching', 'hostel allowance']
   },
 
-  // ===================== BIHAR =====================
-  {
-    id: 'bihar-student-credit-card',
-    name: 'Bihar Student Credit Card Scheme (BSCCS)',
-    slug: 'bihar-student-credit-card',
-    shortDescription: 'Education loan up to ₹4 Lakhs at 1% interest for girls/transgender/PwD and 4% for boys for technical & higher education.',
-    description: 'Under the Seven Resolves (Saat Nischay) of the Government of Bihar, the Bihar Student Credit Card scheme provides collateral-free education loans up to ₹4,00,000 with state guarantee and highly subsidized interest rates to 12th pass students pursuing higher education.',
-    category: 'Education',
-    state: 'Bihar',
-    governmentLevel: 'State',
-    department: 'Education Department, Government of Bihar & Bihar State Educational Finance Corporation',
-    financialBenefitAmount: 'Up to ₹4,00,000 Collateral-Free Education Loan with 1% - 4% simple interest',
-    benefits: [
-      'Covers tuition fees, books, computer, and living/hostel charges up to ₹4 Lakhs',
-      'Interest rate is only 1% for female students, transgender, and persons with disabilities (4% for male students)',
-      'Repayment begins 1 year after course completion or after securing employment'
-    ],
-    eligibility: [
-      'Resident of Bihar aged below 25 years at application time',
-      'Passed Class 12th (or equivalent) from an institution recognized in Bihar',
-      'Secured admission in recognized college, university, or polytechnic in or outside Bihar'
-    ],
-    eligibilityRules: {
-      minAge: 17,
-      maxAge: 25,
-      states: ['Bihar'],
-      requiresStudent: true,
-      minEducation: ['12th Pass (Intermediate)', 'Diploma/ITI', 'Undergraduate (UG)']
-    },
-    requiredDocuments: [
-      'Aadhaar Card of student and co-applicant (parent)',
-      'Bihar Domicile / Niwas Certificate',
-      'Class 10th and 12th Marksheet and Pass Certificate',
-      'Admission Offer Letter & College Fee Structure',
-      'Bank Account Passbook showing IFSC code'
-    ],
-    applicationProcess: [
-      'Register on MNSSBY portal at 7nischay-yuvaupmission.bihar.gov.in',
-      'Submit online application and book appointment at District Registration and Counseling Center (DRCC)',
-      'Visit DRCC with original documents for verification; loan sanctioned by Bihar State Educational Finance Corp'
-    ],
-    deadline: 'Open Year Round',
-    deadlineDate: '2026-12-31',
-    isDeadlineApproaching: false,
-    officialWebsite: 'https://www.7nischay-yuvaupmission.bihar.gov.in',
-    officialSource: 'Education Department, Government of Bihar',
-    lastUpdated: 'August 2026',
-    tags: ['bihar', 'state scheme', 'education loan', 'student credit card', 'saat nischay', 'higher education']
-  },
-
   // ===================== MADHYA PRADESH =====================
   {
     id: 'mp-ladli-behna',

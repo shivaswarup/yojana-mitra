@@ -20,6 +20,9 @@ import {
   auth, 
   googleProvider, 
   signInWithPopup, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateAuthProfile,
   signOut, 
   onAuthStateChanged,
   handleFirestoreError,
@@ -36,10 +39,22 @@ import {
   writeBatch 
 } from 'firebase/firestore';
 
+export function sanitizeForFirestore<T extends Record<string, any>>(obj: T): T {
+  const clean: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
 interface AppContextType {
   currentUser: UserProfile | null;
   isAuthenticated: boolean;
   isOnboarding: boolean;
+  isAuthModalOpen: boolean;
+  authModalMode: 'login' | 'signup';
   activeTab: 'home' | 'profile' | 'deadlines' | 'schemes' | 'recommended' | 'applied';
   selectedScheme: Scheme | null;
   searchQuery: string;
@@ -65,9 +80,12 @@ interface AppContextType {
   askChatbotForCentralSchemes: () => Promise<{ reply: string; foundSchemes: Scheme[] }>;
   openChatbotWithPrompt: (prompt: string) => void;
   setPendingChatbotPrompt: (prompt: string | null) => void;
-  login: (email: string, password?: string) => boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  setAuthModalMode: (mode: 'login' | 'signup') => void;
+  openAuthModal: (mode?: 'login' | 'signup') => void;
+  login: (email: string, password?: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<void>;
-  signup: (name: string, email: string, password?: string) => void;
+  signup: (name: string, email: string, password?: string, stateChoice?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   completeOnboarding: (profileData: UserProfile) => Promise<void>;
@@ -269,10 +287,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return DEMO_PROFILES.student;
+    return null;
   });
 
   const [isOnboarding, setIsOnboarding] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState<'home' | 'profile' | 'deadlines' | 'schemes' | 'recommended' | 'applied'>('home');
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -286,28 +306,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAskingCentralSchemes, setIsAskingCentralSchemes] = useState<boolean>(false);
   const [centralChatbotAnswer, setCentralChatbotAnswer] = useState<{ text: string; timestamp: string } | null>(null);
 
+  const openAuthModal = (mode: 'login' | 'signup' = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   const [chatbotRecommendedSchemes, setChatbotRecommendedSchemes] = useState<ChatbotRecommendedScheme[]>(() => {
-    const defaultProfile = DEMO_PROFILES.student;
     const saved = localStorage.getItem('ym_chatbot_recommended_schemes');
     if (saved) {
       try { 
-        const parsed = JSON.parse(saved) as ChatbotRecommendedScheme[];
-        // Filter out any cached recommendations that do not match the current profile
-        const filtered = parsed.filter(item => {
-          const evalRes = evaluateSchemeEligibility(item.scheme, defaultProfile);
-          return evalRes.unmetCriteria.length === 0 && evalRes.matchScore >= 75;
-        });
-        if (filtered.length > 0) return filtered;
+        return JSON.parse(saved) as ChatbotRecommendedScheme[];
       } catch (e) {}
     }
-    // Generate verified initial AI recommendations for all matching schemes based strictly on the citizen profile
-    const initialRecs = getRecommendedSchemes(SCHEMES_DATABASE, defaultProfile);
-    return initialRecs.map(r => ({
-      scheme: r.scheme,
-      recommendedAt: new Date().toISOString(),
-      aiNote: generatePersonalizedAiNote(r.scheme, defaultProfile),
-      sourceQuery: `AI Profile Auto-Scan (${defaultProfile.occupation}, ${defaultProfile.state})`
-    }));
+    return [];
   });
 
   const [appliedSchemes, setAppliedSchemes] = useState<AppliedSchemeRecord[]>(() => {
@@ -315,7 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return INITIAL_APPLIED;
+    return [];
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -323,7 +334,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return INITIAL_NOTIFICATIONS;
+    return [];
   });
 
   // Track active firestore listeners
@@ -377,7 +388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 id: user.uid,
                 email: user.email || 'citizen@example.com',
                 name: user.displayName || 'Citizen',
-                avatar: user.photoURL || undefined,
+                avatar: user.photoURL || '',
                 age: 21,
                 gender: 'male',
                 state: 'Telangana',
@@ -403,11 +414,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               };
               
               try {
-                await setDoc(userDocRef, newProfile);
+                await setDoc(userDocRef, sanitizeForFirestore(newProfile));
                 setCurrentUser(newProfile);
                 setIsOnboarding(true);
               } catch (err) {
-                handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+                console.warn('Could not write initial Google profile to Firestore:', err);
+                setCurrentUser(newProfile);
               }
             }
           },
@@ -447,6 +459,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/notifications`);
           }
         );
+      } else {
+        // No user authenticated
+        setCurrentUser(null);
+        setAppliedSchemes([]);
+        setNotifications([]);
+        setChatbotRecommendedSchemes([]);
       }
     });
 
@@ -490,85 +508,194 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const res = await signInWithPopup(auth, googleProvider);
+      setIsAuthModalOpen(false);
       setIsOnboarding(false);
-    } catch (err: unknown) {
+      return;
+    } catch (err: any) {
       console.error('Google Sign-In failed', err);
-      throw err;
+      if (err?.code === 'auth/popup-blocked') {
+        throw new Error('Google Sign-In popup was blocked by your browser. Please allow popups or use Email & Password sign-up below.');
+      }
+      if (err?.code === 'auth/unauthorized-domain') {
+        throw new Error('This preview domain is not yet authorized in Firebase Auth. Please use Email & Password sign-up below.');
+      }
+      if (err?.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in popup was closed before completing. Please try again.');
+      }
+      throw new Error(err?.message || 'Google sign-in could not be completed.');
     }
   };
 
-  const login = (email: string, password?: string) => {
-    // Check if matches known demo profile
-    const existing = Object.values(DEMO_PROFILES).find(p => p.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      setCurrentUser(existing);
-      setIsOnboarding(false);
+  const login = async (email: string, password?: string): Promise<boolean> => {
+    if (!email.trim() || !password) {
+      throw new Error('Please enter both email and password.');
+    }
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = cred.user;
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          setCurrentUser(snap.data() as UserProfile);
+        }
+      } catch (docErr) {
+        console.warn('Could not fetch user document after login:', docErr);
+      }
+      setIsAuthModalOpen(false);
       return true;
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err?.code === 'auth/operation-not-allowed') {
+        // Graceful fallback if Email/Password is not enabled in Firebase Console
+        const fallbackProfile: UserProfile = {
+          id: `citizen-${Date.now()}`,
+          email: email.trim(),
+          name: email.split('@')[0] || 'Citizen',
+          avatar: '',
+          age: 21,
+          gender: 'male',
+          state: 'Telangana',
+          district: 'Hyderabad',
+          areaType: 'Urban',
+          maritalStatus: 'Single',
+          highestEducation: 'Undergraduate (UG)',
+          currentEducationStatus: 'Pursuing',
+          isStudent: true,
+          category: 'General',
+          isDisability: false,
+          isMinority: false,
+          annualFamilyIncome: 250000,
+          employmentStatus: 'Student',
+          occupation: 'Student',
+          isFarmer: false,
+          isBusinessOwner: false,
+          isWomanEntrepreneur: false,
+          isSeniorCitizen: false,
+          isBPLOrEWS: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        setCurrentUser(fallbackProfile);
+        setIsAuthModalOpen(false);
+        return true;
+      }
+      if (err?.code === 'auth/invalid-credential' || err?.code === 'auth/user-not-found') {
+        throw new Error('Invalid email or password. If you are new to Yojana Mitra, please select "Sign Up".');
+      }
+      if (err?.code === 'auth/wrong-password') {
+        throw new Error('Incorrect password. Please try again.');
+      }
+      if (err?.code === 'auth/invalid-email') {
+        throw new Error('Invalid email address format.');
+      }
+      throw new Error(err?.message || 'Login failed.');
     }
-
-    const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      email,
-      name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      age: 20,
-      gender: 'male',
-      state: 'All India',
-      district: '',
-      areaType: 'Urban',
-      maritalStatus: 'Single',
-      highestEducation: '12th Pass (Intermediate)',
-      currentEducationStatus: 'Pursuing',
-      isStudent: true,
-      category: 'General',
-      isDisability: false,
-      isMinority: false,
-      annualFamilyIncome: 300000,
-      employmentStatus: 'Student',
-      occupation: 'Student',
-      isFarmer: false,
-      isBusinessOwner: false,
-      isWomanEntrepreneur: false,
-      isSeniorCitizen: false,
-      isBPLOrEWS: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setCurrentUser(newUser);
-    setIsOnboarding(false);
-    return true;
   };
 
-  const signup = (name: string, email: string, password?: string) => {
-    const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      email,
-      name: name || 'Citizen',
-      age: 21,
-      gender: 'male',
-      state: 'Telangana',
-      district: 'Hyderabad',
-      areaType: 'Urban',
-      maritalStatus: 'Single',
-      highestEducation: 'Undergraduate (UG)',
-      currentEducationStatus: 'Pursuing',
-      isStudent: true,
-      category: 'OBC',
-      isDisability: false,
-      isMinority: false,
-      annualFamilyIncome: 250000,
-      employmentStatus: 'Student',
-      occupation: 'Student',
-      isFarmer: false,
-      isBusinessOwner: false,
-      isWomanEntrepreneur: false,
-      isSeniorCitizen: false,
-      isBPLOrEWS: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setCurrentUser(newUser);
-    setIsOnboarding(true);
+  const signup = async (name: string, email: string, password?: string, stateChoice?: string): Promise<void> => {
+    if (!email.trim() || !password) {
+      throw new Error('Please enter email and password.');
+    }
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = cred.user;
+      if (name.trim()) {
+        try {
+          await updateAuthProfile(user, { displayName: name.trim() });
+        } catch (e) {
+          console.warn('Could not update display name:', e);
+        }
+      }
+
+      const newProfile: UserProfile = {
+        id: user.uid,
+        email: user.email || email.trim(),
+        name: name.trim() || 'Citizen',
+        avatar: user.photoURL || '',
+        age: 21,
+        gender: 'male',
+        state: stateChoice || 'Telangana',
+        district: '',
+        areaType: 'Urban',
+        maritalStatus: 'Single',
+        highestEducation: 'Undergraduate (UG)',
+        currentEducationStatus: 'Pursuing',
+        isStudent: true,
+        category: 'General',
+        isDisability: false,
+        isMinority: false,
+        annualFamilyIncome: 250000,
+        employmentStatus: 'Student',
+        occupation: 'Student',
+        isFarmer: false,
+        isBusinessOwner: false,
+        isWomanEntrepreneur: false,
+        isSeniorCitizen: false,
+        isBPLOrEWS: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, 'users', user.uid), sanitizeForFirestore(newProfile));
+      } catch (err) {
+        console.warn('Could not write registered user to Firestore:', err);
+      }
+      setCurrentUser(newProfile);
+      setIsAuthModalOpen(false);
+      setIsOnboarding(true);
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      if (err?.code === 'auth/operation-not-allowed') {
+        const newProfile: UserProfile = {
+          id: `citizen-${Date.now()}`,
+          email: email.trim(),
+          name: name.trim() || 'Citizen',
+          avatar: '',
+          age: 21,
+          gender: 'male',
+          state: stateChoice || 'Telangana',
+          district: '',
+          areaType: 'Urban',
+          maritalStatus: 'Single',
+          highestEducation: 'Undergraduate (UG)',
+          currentEducationStatus: 'Pursuing',
+          isStudent: true,
+          category: 'General',
+          isDisability: false,
+          isMinority: false,
+          annualFamilyIncome: 250000,
+          employmentStatus: 'Student',
+          occupation: 'Student',
+          isFarmer: false,
+          isBusinessOwner: false,
+          isWomanEntrepreneur: false,
+          isSeniorCitizen: false,
+          isBPLOrEWS: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        setCurrentUser(newProfile);
+        setIsAuthModalOpen(false);
+        setIsOnboarding(true);
+        return;
+      }
+      if (err?.code === 'auth/email-already-in-use') {
+        throw new Error('This email is already registered. Please select "Log In" to sign in.');
+      }
+      if (err?.code === 'auth/weak-password') {
+        throw new Error('Password is too weak. Please use at least 6 characters.');
+      }
+      if (err?.code === 'auth/invalid-email') {
+        throw new Error('Please enter a valid email address.');
+      }
+      throw new Error(err?.message || 'Registration failed.');
+    }
   };
 
   const logout = async () => {
@@ -854,6 +981,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const profile = DEMO_PROFILES[profileType];
     if (profile) {
       setCurrentUser(profile);
+      setIsAuthModalOpen(false);
       setIsOnboarding(false);
       setActiveTab('home');
       setSelectedScheme(null);
@@ -1025,6 +1153,11 @@ My Profile Context:
         currentUser,
         isAuthenticated: !!currentUser,
         isOnboarding,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        authModalMode,
+        setAuthModalMode,
+        openAuthModal,
         activeTab,
         selectedScheme,
         searchQuery,

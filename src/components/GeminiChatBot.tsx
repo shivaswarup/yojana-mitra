@@ -124,7 +124,8 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
     setSelectedScheme: setContextSelectedScheme,
     addChatbotRecommendation,
     pendingChatbotPrompt,
-    setPendingChatbotPrompt
+    setPendingChatbotPrompt,
+    openAuthModal
   } = useApp();
   
   const [isMinimized, setIsMinimized] = useState(false);
@@ -136,7 +137,9 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
       {
         id: 'welcome',
         role: 'model',
-        text: `Namaste **${currentUser?.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser?.occupation || 'Citizen'}, ${currentUser?.maritalStatus || 'Single'}, ${currentUser?.category || 'General'}, ${currentUser?.state || 'India'}${currentUser?.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou do not need to ask for eligible schemes again. You can ask me here about required documents, application deadlines, step-by-step registration on official portals, or appeal procedures.`,
+        text: currentUser 
+          ? `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser.occupation || 'Citizen'}, ${currentUser.maritalStatus || 'Single'}, ${currentUser.category || 'General'}, ${currentUser.state || 'India'}${currentUser.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou can ask me here about required documents, application deadlines, step-by-step registration on official portals, or appeal procedures.`
+          : `Namaste Citizen! 🙏\n\nI am **Yojana Mitra AI**, official Government Scheme & Scholarship assistant. Please **Log In** or **Sign Up** to check your verified eligibility for central & state schemes!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         matchedSchemes: allMatches
       }
@@ -253,7 +256,11 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
       window.removeEventListener('pointerup', handlePointerUp);
 
       if (launcherDragRef.current && !launcherDragRef.current.moved) {
-        setIsChatbotOpen(true);
+        if (!currentUser) {
+          openAuthModal('login');
+        } else {
+          setIsChatbotOpen(true);
+        }
       }
       setIsDraggingLauncher(false);
       launcherDragRef.current = null;
@@ -321,6 +328,11 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
   const handleSendMessage = async (customText?: string) => {
     const textToSend = customText || inputMessage.trim();
     if (!textToSend || loading) return;
+
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
@@ -470,6 +482,14 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
           ref={launcherBtnRef}
           id="open-gemini-chat-btn"
           onPointerDown={handleLauncherPointerDown}
+          onClick={() => {
+            if (launcherDragRef.current?.moved) return;
+            if (!currentUser) {
+              openAuthModal('login');
+            } else {
+              setIsChatbotOpen(true);
+            }
+          }}
           style={
             launcherPos.x !== null && launcherPos.y !== null
               ? {

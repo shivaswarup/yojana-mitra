@@ -13,6 +13,7 @@ import { useApp } from '../context/AppContext';
 
 export const Sidebar: React.FC = () => {
   const { 
+    currentUser,
     activeTab, 
     setActiveTab, 
     logout, 
@@ -97,14 +98,16 @@ export const Sidebar: React.FC = () => {
             <p className="text-stone-600">Direct submission links to official government portals.</p>
           </div>
 
-          <button
-            id="nav-logout-button"
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-stone-500 hover:text-red-600 hover:bg-stone-200/80 transition-colors"
-          >
-            <LogOut className="w-4 h-4 text-stone-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Logout</span>
-          </button>
+          {currentUser && (
+            <button
+              id="nav-logout-button"
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-stone-500 hover:text-red-600 hover:bg-stone-200/80 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 text-stone-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
 

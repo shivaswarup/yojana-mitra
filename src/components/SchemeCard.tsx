@@ -16,13 +16,22 @@ import { useApp } from '../context/AppContext';
 interface SchemeCardProps {
   scheme: Scheme;
   recommendation?: SchemeRecommendation;
-  onViewDetails: (scheme: Scheme) => void;
+  onViewDetails?: (scheme: Scheme) => void;
+  onSelect?: (scheme: Scheme) => void;
 }
 
-export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, recommendation, onViewDetails }) => {
-  const { appliedSchemes, applyForScheme } = useApp();
+export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, recommendation, onViewDetails, onSelect }) => {
+  const { appliedSchemes } = useApp();
   const isApplied = appliedSchemes.some(a => a.schemeId === scheme.id);
   const applicationRecord = appliedSchemes.find(a => a.schemeId === scheme.id);
+
+  const handleSelect = () => {
+    if (onViewDetails) {
+      onViewDetails(scheme);
+    } else if (onSelect) {
+      onSelect(scheme);
+    }
+  };
 
   // Category badge styling according to Natural Tones theme
   const getCategoryBadgeClass = (category: string) => {
@@ -120,7 +129,7 @@ export const SchemeCard: React.FC<SchemeCardProps> = ({ scheme, recommendation, 
 
         <button
           id={`view-details-${scheme.id}`}
-          onClick={() => onViewDetails(scheme)}
+          onClick={handleSelect}
           className="w-full py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-xs font-bold hover:bg-emerald-700 hover:text-white transition-all flex items-center justify-center gap-1.5"
         >
           <span>View Details</span>

@@ -20,7 +20,8 @@ import {
   Clock,
   AlertTriangle,
   X,
-  GraduationCap
+  GraduationCap,
+  UserPlus
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SchemeCard } from './SchemeCard';
@@ -46,10 +47,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     expiringIn3DaysSchemes,
     searchQuery, 
     setSearchQuery, 
-    setActiveTab 
+    setActiveTab,
+    openAuthModal
   } = useApp();
 
-  const userState = currentUser?.state || 'Telangana';
+  const userState = currentUser?.state || '';
 
   // AI discovery state: DO NOT show schemes until user clicks "Ask AI"
   const [stateAiQueried, setStateAiQueried] = useState<boolean>(false);
@@ -63,6 +65,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
 
   // Handle "Ask AI for State Schemes"
   const handleAskStateAi = async () => {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
     setStateAiQueried(true);
     const result = await askChatbotForStateSchemes(userState);
     if (result.foundSchemes && result.foundSchemes.length > 0) {
@@ -79,6 +85,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
 
   // Handle "Ask AI for Central Schemes"
   const handleAskCentralAi = async () => {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
     setCentralAiQueried(true);
     const result = await askChatbotForCentralSchemes();
     if (result.foundSchemes && result.foundSchemes.length > 0) {
@@ -121,6 +131,20 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
       s.tags.some(t => t.toLowerCase().includes(q))
     );
   }, [centralAiSchemes, searchQuery]);
+
+  // Guest search query results when actively searching
+  const guestFilteredSchemes = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return SCHEMES_DATABASE.filter(s => 
+      s.name.toLowerCase().includes(q) ||
+      s.shortDescription.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q) ||
+      s.department.toLowerCase().includes(q) ||
+      s.state.toLowerCase().includes(q) ||
+      s.tags.some(t => t.toLowerCase().includes(q))
+    );
+  }, [searchQuery]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -192,107 +216,95 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
         </div>
       )}
 
-      {/* Citizen Profile Context Header */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
-            {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-stone-900">
-                {currentUser?.name || 'Citizen'}
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                {currentUser?.occupation || 'Citizen'}
-              </span>
+      {/* Official Government Portal Welcome Banner if guest */}
+      {!currentUser && (
+        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-950 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/50">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-700/70 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider text-emerald-200">
+              <span>🏛️</span>
+              <span>National Scheme & Scholarship Portal</span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-600 mt-1">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-amber-700" />
-                State Domicile: <strong className="text-stone-900">{userState}</strong>
-              </span>
-              <span>•</span>
-              <span>Category: <strong className="text-stone-900">{currentUser?.category || 'General'}</strong></span>
-              <span>•</span>
-              <span>Family Income: <strong className="text-stone-900">₹{currentUser?.annualFamilyIncome?.toLocaleString() || 'N/A'}</strong></span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-            <input
-              type="text"
-              placeholder="Search in AI referred schemes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-800"
-            />
-          </div>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className="px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors cursor-pointer shrink-0"
-          >
-            Edit Profile
-          </button>
-        </div>
-      </div>
-
-      {/* ==================================================== */}
-      {/* SECTION 1 (TOP): STATE GOVERNMENT SCHEMES & SCHOLARSHIPS */}
-      {/* ==================================================== */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-amber-200">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-amber-100 text-amber-900">
-                <Landmark className="w-5 h-5" />
-              </span>
-              <h2 className="text-xl font-bold text-stone-900 tracking-tight">
-                State Government Schemes & Scholarships
-              </h2>
-            </div>
-            <p className="text-stone-600 text-xs">
-              Official welfare programs, higher education tuition reimbursements, and youth entitlements from the <strong>Government of {userState}</strong>.
+            <h2 className="text-xl font-bold tracking-tight text-white">
+              Official Government Schemes & Financial Aids Finder
+            </h2>
+            <p className="text-xs text-emerald-100/80 leading-relaxed">
+              Sign up or log in to check your personalized eligibility for Central DBT subsidies, student scholarships, state farmer grants, and startup benefits securely verified by AI.
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full text-xs font-bold">
-              🏛️ {userState} Domicile
-            </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => openAuthModal('login')}
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 transition-all cursor-pointer"
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => openAuthModal('signup')}
+              className="px-4 py-2.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Create Account</span>
+            </button>
           </div>
         </div>
+      )}
 
-        {/* CONDITION 1: USER HAS NOT CLICKED "ASK AI FOR STATE SCHEMES" YET */}
-        {!stateAiQueried ? (
-          <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-stone-50 border-2 border-dashed border-amber-300/90 rounded-2xl p-8 text-center space-y-4 shadow-2xs">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center shadow-xs">
-              <Landmark className="w-7 h-7" />
+      {/* ==================================================== */}
+      {/* SECTION 1 & 2: REVEALED AFTER CITIZEN LOGS IN */}
+      {/* ==================================================== */}
+      {currentUser ? (
+        <>
+          {/* SECTION 1 (TOP): STATE GOVERNMENT SCHEMES & SCHOLARSHIPS */}
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-amber-200">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-amber-100 text-amber-900">
+                    <Landmark className="w-5 h-5" />
+                  </span>
+                  <h2 className="text-xl font-bold text-stone-900 tracking-tight">
+                    {userState} State Government Schemes & Scholarships
+                  </h2>
+                </div>
+                <p className="text-stone-600 text-xs">
+                  Official welfare programs, higher education tuition reimbursements, and youth entitlements enacted by the <strong>Government of {userState}</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full text-xs font-bold">
+                  🏛️ {userState} Domicile
+                </span>
+              </div>
             </div>
-            <div className="max-w-lg mx-auto space-y-1.5">
-              <h3 className="text-base font-bold text-stone-900">
-                Discover Active Schemes & Scholarships in {userState}
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Click below to have <strong>Yojana Mitra AI Chatbot</strong> scan and evaluate all official state welfare programs, fee reimbursements, and scholarships enacted by the <strong>Government of {userState}</strong> matching your profile credentials ({currentUser?.name}, {currentUser?.occupation || 'Citizen'}).
-              </p>
-            </div>
-            <div className="pt-2">
-              <button
-                onClick={handleAskStateAi}
-                disabled={isAskingStateSchemes}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 hover:shadow-lg"
-              >
-                <Bot className={`w-4 h-4 ${isAskingStateSchemes ? 'animate-spin' : ''}`} />
-                <Sparkles className="w-4 h-4 text-amber-200" />
-                <span>{isAskingStateSchemes ? `Scanning Government of ${userState}...` : `✨ Ask AI for State Schemes`}</span>
-              </button>
-            </div>
-          </div>
-        ) : (
+
+            {/* CONDITION 1: USER HAS NOT CLICKED "ASK AI FOR STATE SCHEMES" YET */}
+            {!stateAiQueried ? (
+              <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-stone-50 border-2 border-dashed border-amber-300/90 rounded-2xl p-8 text-center space-y-4 shadow-2xs">
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center shadow-xs">
+                  <Landmark className="w-7 h-7" />
+                </div>
+                <div className="max-w-lg mx-auto space-y-1.5">
+                  <h3 className="text-base font-bold text-stone-900">
+                    Discover {userState} State Schemes & Scholarships
+                  </h3>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Click below to discover schemes and scholarships enacted by the <strong>Government of {userState}</strong> matching your verified profile credentials ({currentUser?.name}, {currentUser?.occupation || 'Citizen'}).
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    onClick={handleAskStateAi}
+                    disabled={isAskingStateSchemes}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 hover:shadow-lg"
+                  >
+                    <Bot className={`w-4 h-4 ${isAskingStateSchemes ? 'animate-spin' : ''}`} />
+                    <Sparkles className="w-4 h-4 text-amber-200" />
+                    <span>{isAskingStateSchemes ? `Scanning Government of ${userState}...` : `✨ Discover ${userState} State Schemes`}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
           /* CONDITION 2: SPECIAL CHATBOT BOX FOR STATE SCHEMES */
           <div className="bg-gradient-to-b from-amber-50/80 to-white rounded-2xl border-2 border-amber-300 p-5 sm:p-6 space-y-5 shadow-sm">
             {/* Chatbot Header */}
@@ -619,6 +631,37 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
           </div>
         )}
       </section>
+    </>
+  ) : searchQuery.trim() ? (
+    /* If guest user actively searches in search bar */
+    <section className="space-y-4 pt-2">
+      <div className="pb-3 border-b-2 border-stone-200">
+        <h2 className="text-xl font-bold text-stone-900 tracking-tight">
+          Search Results for "{searchQuery}"
+        </h2>
+        <p className="text-stone-600 text-xs">
+          Found {guestFilteredSchemes.length} matching government schemes & scholarships. Log in for personalized eligibility evaluation.
+        </p>
+      </div>
+
+      {guestFilteredSchemes.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {guestFilteredSchemes.map((scheme) => (
+            <SchemeCard
+              key={scheme.id}
+              scheme={scheme}
+              onViewDetails={onSelectScheme}
+              onSelect={onSelectScheme}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl p-8 text-center text-stone-500 border border-stone-200">
+          <p className="text-xs">No schemes matched "{searchQuery}".</p>
+        </div>
+      )}
+    </section>
+  ) : null}
 
     </div>
   );

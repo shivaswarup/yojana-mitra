@@ -36,8 +36,8 @@ async function generateContentWithFallback(ai: GoogleGenAI, options: {
   fallbackModels?: string[];
 }) {
   const modelsToTry = [
-    options.primaryModel || 'gemini-3.7-flash',
-    ...(options.fallbackModels || ['gemini-3.1-flash-lite', 'gemini-flash-latest'])
+    options.primaryModel || 'gemini-3.8-flash',
+    ...(options.fallbackModels || ['gemini-flash-latest', 'gemini-3.1-flash-lite'])
   ];
 
   let lastError: any = null;
@@ -139,8 +139,8 @@ RULES & CONSTRAINTS:
     });
 
     const response = await generateContentWithFallback(ai, {
-      primaryModel: 'gemini-3.7-flash',
-      fallbackModels: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+      primaryModel: 'gemini-3.8-flash',
+      fallbackModels: ['gemini-flash-latest', 'gemini-3.1-flash-lite'],
       contents,
       config: {
         systemInstruction,
@@ -218,8 +218,8 @@ Return a valid JSON object in this exact format:
 }`;
 
     const response = await generateContentWithFallback(ai, {
-      primaryModel: 'gemini-3.7-flash',
-      fallbackModels: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+      primaryModel: 'gemini-3.8-flash',
+      fallbackModels: ['gemini-flash-latest', 'gemini-3.1-flash-lite'],
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         responseMimeType: 'application/json',
@@ -274,8 +274,8 @@ STRICT GUIDELINES:
 4. Keep the tone respectful, clear, and reassuring.`;
 
     const response = await generateContentWithFallback(ai, {
-      primaryModel: 'gemini-3.7-flash',
-      fallbackModels: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+      primaryModel: 'gemini-3.8-flash',
+      fallbackModels: ['gemini-flash-latest', 'gemini-3.1-flash-lite'],
       contents: prompt,
       config: {
         systemInstruction: 'You are the official Yojana Mitra Assistant for Indian Government Schemes and Scholarships. Always ground advice in verified government portals (.gov.in).'
@@ -321,8 +321,8 @@ Provide:
 Do not invent deadlines or unofficial URLs.`;
 
     const response = await generateContentWithFallback(ai, {
-      primaryModel: 'gemini-3.7-flash',
-      fallbackModels: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+      primaryModel: 'gemini-3.8-flash',
+      fallbackModels: ['gemini-flash-latest', 'gemini-3.1-flash-lite'],
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }]

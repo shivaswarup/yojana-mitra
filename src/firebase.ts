@@ -1,5 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateProfile as updateAuthProfile,
+  signOut, 
+  onAuthStateChanged, 
+  User 
+} from 'firebase/auth';
 import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -9,6 +19,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with custom databaseId and auto long-polling for iframe/proxy stability
 initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
+  ignoreUndefinedProperties: true,
 }, firebaseConfig.firestoreDatabaseId);
 
 // Initialize Firestore with custom databaseId if configured
@@ -97,8 +108,19 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  // Non-blocking for snapshot listener reads to prevent uncaught application crashes
+  if (operationType === OperationType.GET || operationType === OperationType.LIST) {
+    return;
+  }
   throw new Error(JSON.stringify(errInfo));
 }
 
-export { signInWithPopup, signOut, onAuthStateChanged };
+export { 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateAuthProfile,
+  signOut, 
+  onAuthStateChanged 
+};
 export type { User };

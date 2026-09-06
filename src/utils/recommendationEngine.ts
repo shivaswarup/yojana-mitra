@@ -281,3 +281,61 @@ export function getRecommendedSchemes(schemes: Scheme[], profile: UserProfile): 
     .filter(rec => rec.unmetCriteria.length === 0 && rec.matchScore >= 75)
     .sort((a, b) => b.matchScore - a.matchScore);
 }
+
+/**
+ * Filter and extract ONLY the schemes identified, recommended, or discussed in the chatbot's text response.
+ */
+export function matchSchemesFromAiResponse(
+  aiText: string,
+  candidateSchemes: Scheme[],
+  userProfile?: UserProfile | null
+): Scheme[] {
+  if (!aiText) return [];
+  const textLower = aiText.toLowerCase();
+
+  // 1. Identify schemes explicitly mentioned in the chatbot's reply text
+  const mentioned = candidateSchemes.filter(scheme => {
+    const nameLower = scheme.name.toLowerCase();
+    const nameWithoutParen = nameLower.replace(/\([^)]*\)/g, '').trim();
+    
+    // Check acronym in parentheses e.g. "PMSS", "BSCCS", "ePASS", "PM-JAY", "KCR Kit"
+    const acronymMatch = scheme.name.match(/\(([^)]+)\)/);
+    const acronym = acronymMatch ? acronymMatch[1].trim().toLowerCase() : '';
+
+    if (textLower.includes(nameLower)) return true;
+    if (nameWithoutParen.length >= 6 && textLower.includes(nameWithoutParen)) return true;
+    if (acronym.length >= 3 && textLower.includes(acronym)) return true;
+    if (scheme.slug && textLower.includes(scheme.slug.toLowerCase())) return true;
+
+    // Check distinctive keywords in tags
+    const meaningfulTags = scheme.tags.filter(t => 
+      t.length >= 4 && 
+      !['state scheme', 'central scheme', 'scholarship', 'welfare', 'scheme', 'government', 'india', 'state'].includes(t.toLowerCase())
+    );
+    const matchedTags = meaningfulTags.filter(t => textLower.includes(t.toLowerCase()));
+    if (matchedTags.length >= 2) return true;
+
+    return false;
+  });
+
+  if (mentioned.length > 0) {
+    return mentioned;
+  }
+
+  // 2. If exact scheme names were not verbatim, filter strictly to schemes the citizen qualifies for
+  if (userProfile) {
+    const qualified = candidateSchemes.filter(s => {
+      const evalRes = evaluateSchemeEligibility(s, userProfile);
+      return evalRes.unmetCriteria.length === 0 && evalRes.matchScore >= 60;
+    });
+    if (qualified.length > 0) {
+      return qualified;
+    }
+    
+    return [...candidateSchemes]
+      .sort((a, b) => evaluateSchemeEligibility(b, userProfile).matchScore - evaluateSchemeEligibility(a, userProfile).matchScore)
+      .slice(0, 3);
+  }
+
+  return candidateSchemes.slice(0, 4);
+}
