@@ -7,7 +7,8 @@ import {
   LogOut, 
   ChevronDown,
   UserPlus,
-  LogIn
+  LogIn,
+  Users
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -158,6 +159,14 @@ export const Navbar: React.FC = () => {
                       >
                         <CheckCircle2 className="w-4 h-4 text-stone-500" />
                         <span>My Applied Schemes</span>
+                      </button>
+                      <button
+                        id="switch-account-button"
+                        onClick={() => { openAuthModal('login'); setIsProfileMenuOpen(false); }}
+                        className="w-full px-3 py-2.5 text-left text-xs text-stone-700 hover:bg-stone-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Users className="w-4 h-4 text-stone-500" />
+                        <span>Switch / Choose Account</span>
                       </button>
 
                       <div className="border-t border-stone-100 my-1" />

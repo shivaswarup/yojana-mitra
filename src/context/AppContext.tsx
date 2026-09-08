@@ -5,7 +5,8 @@ import {
   AppliedSchemeRecord, 
   NotificationItem, 
   SchemeRecommendation,
-  ChatbotRecommendedScheme
+  ChatbotRecommendedScheme,
+  DeviceAccount
 } from '../types';
 import { SCHEMES_DATABASE } from '../data/schemes';
 import { getRecommendedSchemes, evaluateSchemeEligibility, matchSchemesFromAiResponse } from '../utils/recommendationEngine';
@@ -19,6 +20,7 @@ import {
   db, 
   auth, 
   googleProvider, 
+  createGoogleProviderWithAccountSelect,
   signInWithPopup, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -74,6 +76,11 @@ interface AppContextType {
   centralChatbotAnswer: { text: string; timestamp: string } | null;
   expiringIn3DaysSchemes: Array<{ scheme: Scheme; daysLeft: number; statusText: string }>;
   
+  // Multi-Account Device Management
+  deviceAccounts: DeviceAccount[];
+  removeDeviceAccount: (idOrEmail: string) => void;
+  selectDeviceAccount: (account: DeviceAccount) => Promise<void>;
+
   // Actions
   rescanSchemesWithAI: () => Promise<void>;
   askChatbotForStateSchemes: (stateName?: string) => Promise<{ reply: string; foundSchemes: Scheme[] }>;
@@ -281,7 +288,50 @@ const INITIAL_APPLIED: AppliedSchemeRecord[] = [
   }
 ];
 
+const INITIAL_DEVICE_ACCOUNTS: DeviceAccount[] = [
+  {
+    id: 'user-student-1',
+    email: 'shivaswarup2007@gmail.com',
+    name: 'Shiva Swarup',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    provider: 'google',
+    lastUsed: '2026-09-08T10:00:00Z',
+    state: 'Telangana'
+  },
+  {
+    id: 'user-farmer-2',
+    email: 'ramesh.patil@example.com',
+    name: 'Ramesh Patil',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    provider: 'password',
+    lastUsed: '2026-09-07T14:30:00Z',
+    state: 'Maharashtra'
+  },
+  {
+    id: 'user-business-3',
+    email: 'priya.sharma@example.com',
+    name: 'Priya Sharma',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    provider: 'google',
+    lastUsed: '2026-09-06T09:15:00Z',
+    state: 'Delhi'
+  }
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [deviceAccounts, setDeviceAccounts] = useState<DeviceAccount[]>(() => {
+    const saved = localStorage.getItem('ym_device_accounts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_DEVICE_ACCOUNTS;
+  });
+
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('ym_current_user');
     if (saved) {
@@ -362,6 +412,81 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('ym_chatbot_recommended_schemes', JSON.stringify(chatbotRecommendedSchemes));
   }, [chatbotRecommendedSchemes]);
+
+  useEffect(() => {
+    localStorage.setItem('ym_device_accounts', JSON.stringify(deviceAccounts));
+  }, [deviceAccounts]);
+
+  const recordDeviceAccount = (acc: Omit<DeviceAccount, 'lastUsed'>) => {
+    setDeviceAccounts(prev => {
+      const existing = prev.filter(a => a.email.toLowerCase() !== acc.email.toLowerCase() && a.id !== acc.id);
+      const updated: DeviceAccount = {
+        ...acc,
+        lastUsed: new Date().toISOString()
+      };
+      const list = [updated, ...existing];
+      try {
+        localStorage.setItem('ym_device_accounts', JSON.stringify(list));
+      } catch (e) {}
+      return list;
+    });
+  };
+
+  const removeDeviceAccount = (idOrEmail: string) => {
+    setDeviceAccounts(prev => {
+      const filtered = prev.filter(a => a.id !== idOrEmail && a.email.toLowerCase() !== idOrEmail.toLowerCase());
+      try {
+        localStorage.setItem('ym_device_accounts', JSON.stringify(filtered));
+      } catch (e) {}
+      return filtered;
+    });
+  };
+
+  const selectDeviceAccount = async (account: DeviceAccount) => {
+    recordDeviceAccount(account);
+    if (account.provider === 'google') {
+      await loginWithGoogle(account.email, account.name);
+      return;
+    }
+
+    const demoKey = Object.keys(DEMO_PROFILES).find(k => DEMO_PROFILES[k].email.toLowerCase() === account.email.toLowerCase());
+    if (demoKey) {
+      loadDemoProfile(demoKey as any);
+      setIsAuthModalOpen(false);
+      return;
+    }
+
+    const profile: UserProfile = {
+      id: account.id,
+      email: account.email,
+      name: account.name,
+      avatar: account.avatar || '',
+      age: 21,
+      gender: 'male',
+      state: account.state || 'Telangana',
+      district: 'Hyderabad',
+      areaType: 'Urban',
+      maritalStatus: 'Single',
+      highestEducation: 'Undergraduate (UG)',
+      currentEducationStatus: 'Pursuing',
+      isStudent: true,
+      category: 'General',
+      isDisability: false,
+      isMinority: false,
+      annualFamilyIncome: 250000,
+      employmentStatus: 'Student',
+      occupation: 'Student',
+      isFarmer: false,
+      isBusinessOwner: false,
+      isWomanEntrepreneur: false,
+      isSeniorCitizen: false,
+      isBPLOrEWS: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setCurrentUser(profile);
+    setIsAuthModalOpen(false);
+  };
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -507,19 +632,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const unreadNotificationCount = notifications.filter(n => !n.read).length;
 
   const loginWithGoogle = async (preferredEmail?: string, preferredName?: string) => {
+    const provider = createGoogleProviderWithAccountSelect();
+    if (preferredEmail && preferredEmail.includes('@')) {
+      provider.setCustomParameters({
+        prompt: 'select_account',
+        login_hint: preferredEmail.trim()
+      });
+    } else {
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+    }
+
     const targetEmail = (preferredEmail?.trim() || 'shivaswarup2007@gmail.com').toLowerCase();
     const targetName = preferredName?.trim() || (targetEmail.includes('shivaswarup') ? 'Shiva Swarup' : targetEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
 
     try {
-      // 1. Attempt standard Firebase Google popup sign-in
-      const result = await signInWithPopup(auth, googleProvider);
+      // 1. Attempt standard Firebase Google popup sign-in with account chooser prompt
+      const result = await signInWithPopup(auth, provider);
       if (result?.user) {
+        const u = result.user;
+        const loggedEmail = u.email || targetEmail;
+        const loggedName = u.displayName || targetName;
+
+        recordDeviceAccount({
+          id: u.uid,
+          email: loggedEmail,
+          name: loggedName,
+          avatar: u.photoURL || undefined,
+          provider: 'google',
+          state: 'Telangana'
+        });
+
         setIsAuthModalOpen(false);
         setIsOnboarding(false);
         return;
       }
     } catch (err: any) {
       console.warn('Google popup notification (domain authorization / iframe popup restriction):', err?.code || err);
+
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        throw new Error('Google sign-in was cancelled. Please choose an account to continue.');
+      }
 
       // 2. Verified Google Authentication session for preview / container environments
       const uid = auth.currentUser?.uid || `google-user-${targetEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -556,6 +710,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: new Date().toISOString()
       };
 
+      recordDeviceAccount({
+        id: citizenProfile.id,
+        email: citizenProfile.email,
+        name: citizenProfile.name,
+        avatar: citizenProfile.avatar,
+        provider: 'google',
+        state: citizenProfile.state
+      });
+
       // Set user session in app state and local storage immediately
       setCurrentUser(citizenProfile);
       localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
@@ -591,10 +754,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const userDocRef = doc(db, 'users', user.uid);
         const snap = await getDoc(userDocRef);
         if (snap.exists()) {
-          setCurrentUser(snap.data() as UserProfile);
+          const profile = snap.data() as UserProfile;
+          setCurrentUser(profile);
+          recordDeviceAccount({
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            avatar: profile.avatar,
+            provider: 'password',
+            state: profile.state
+          });
+        } else {
+          recordDeviceAccount({
+            id: user.uid,
+            email: email.trim(),
+            name: user.displayName || email.split('@')[0],
+            avatar: user.photoURL || undefined,
+            provider: 'password'
+          });
         }
       } catch (docErr) {
         console.warn('Could not fetch user document after login:', docErr);
+        recordDeviceAccount({
+          id: user.uid,
+          email: email.trim(),
+          name: user.displayName || email.split('@')[0],
+          avatar: user.photoURL || undefined,
+          provider: 'password'
+        });
       }
       setIsAuthModalOpen(false);
       return true;
@@ -699,6 +886,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
         console.warn('Could not write registered user to Firestore:', err);
       }
+      recordDeviceAccount({
+        id: newProfile.id,
+        email: newProfile.email,
+        name: newProfile.name,
+        avatar: newProfile.avatar,
+        provider: 'password',
+        state: newProfile.state
+      });
       setCurrentUser(newProfile);
       setIsAuthModalOpen(false);
       setIsOnboarding(true);
@@ -733,6 +928,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
+        recordDeviceAccount({
+          id: newProfile.id,
+          email: newProfile.email,
+          name: newProfile.name,
+          avatar: newProfile.avatar,
+          provider: 'password',
+          state: newProfile.state
+        });
         setCurrentUser(newProfile);
         setIsAuthModalOpen(false);
         setIsOnboarding(true);
@@ -1033,6 +1236,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadDemoProfile = (profileType: 'student' | 'farmer' | 'woman_entrepreneur' | 'senior_citizen') => {
     const profile = DEMO_PROFILES[profileType];
     if (profile) {
+      recordDeviceAccount({
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        avatar: profile.avatar,
+        provider: 'demo',
+        state: profile.state
+      });
       setCurrentUser(profile);
       setIsAuthModalOpen(false);
       setIsOnboarding(false);
@@ -1243,6 +1454,12 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         isAskingCentralSchemes,
         centralChatbotAnswer,
         expiringIn3DaysSchemes,
+        // Multi-Account Device Management
+        deviceAccounts,
+        removeDeviceAccount,
+        selectDeviceAccount,
+
+        // Actions
         rescanSchemesWithAI,
         askChatbotForStateSchemes,
         askChatbotForCentralSchemes,

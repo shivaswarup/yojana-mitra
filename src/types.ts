@@ -65,6 +65,16 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface DeviceAccount {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  provider: 'google' | 'password' | 'demo';
+  lastUsed: string;
+  state?: string;
+}
+
 export type SchemeCategory = 
   | 'Education'
   | 'Scholarships'
