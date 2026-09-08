@@ -100,6 +100,155 @@ export const STATE_SCHEMES: Scheme[] = [
     lastUpdated: 'August 2026',
     tags: ['telangana', 'state scheme', 'women', 'free bus', 'mahalaxmi', 'tgsrtc']
   },
+  {
+    id: 'telangana-overseas-vidya-nidhi',
+    name: 'Telangana Overseas Vidya Nidhi Scheme (Ambedkar & Jyotiba Phule)',
+    slug: 'telangana-overseas-vidya-nidhi',
+    shortDescription: 'Financial assistance grant of ₹20 Lakhs plus one-way airfare for BC, EBC, SC, ST, and Minority students pursuing PG or PhD abroad.',
+    description: 'The Government of Telangana sanctions ₹20,00,000 financial grant in two installments along with visa facilitation and flight tickets to eligible meritorious backward class, scheduled caste, and minority students from Telangana pursuing Masters and Doctoral programs in accredited foreign universities in the USA, UK, Australia, Canada, and Germany.',
+    category: 'Scholarships',
+    state: 'Telangana',
+    governmentLevel: 'State',
+    department: 'BC Welfare & Scheduled Castes Development Department, Govt of Telangana',
+    financialBenefitAmount: '₹20,00,000 Direct Grant + One-way Economy Airfare',
+    benefits: [
+      '₹20 Lakhs direct financial assistance disbursed in two installments (₹10 Lakhs upon landing and ₹10 Lakhs upon passing 1st semester)',
+      'One-way flight passage charges and visa processing fee reimbursement',
+      'Exemption from institutional loan collateral for international studies'
+    ],
+    eligibility: [
+      'Must be a permanent domiciled resident of Telangana State',
+      'Belonging to BC, EBC, SC, ST, or Minority communities',
+      'Maximum age limit of 35 years as on the date of notification',
+      'Annual family income from all sources must not exceed ₹5.00 Lakhs per annum',
+      'Must have secured minimum 60% marks in Graduation (Degree / Engineering)',
+      'Valid score in GRE / GMAT / TOEFL / IELTS and confirmed I-20 or admission letter'
+    ],
+    eligibilityRules: {
+      minAge: 20,
+      maxAge: 35,
+      states: ['Telangana'],
+      categories: ['OBC', 'SC', 'ST', 'EWS', 'Minority'],
+      maxIncome: 500000,
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'Aadhaar Card with Telangana residential address',
+      'Integrated Caste and Domicile Certificate issued by MeeSeva',
+      'Income Certificate issued by Tahsildar (under ₹5 Lakhs)',
+      'Graduation Degree Certificate & Consolidated Marksheet (min 60%)',
+      'GRE / GMAT and TOEFL / IELTS score cards',
+      'Foreign University Admission Offer Letter & I-20 Form',
+      'Valid Indian Passport and Student Visa copy'
+    ],
+    applicationProcess: [
+      'Apply online on Telangana ePASS Overseas portal (telanganaepass.cgg.gov.in)',
+      'Upload academic records, foreign university admission letter, and MeeSeva certificates',
+      'Attend state verification interview and counseling before the State Selection Committee',
+      'Sanction proceedings issued and funds credited via foreign currency DBT'
+    ],
+    deadline: '30 October 2026',
+    deadlineDate: '2026-10-30',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://telanganaepass.cgg.gov.in',
+    officialSource: 'BC Welfare Department & SCDD, Government of Telangana',
+    lastUpdated: 'August 2026',
+    tags: ['telangana', 'state scheme', 'overseas scholarship', 'vidya nidhi', 'masters', 'phd', 'foreign studies']
+  },
+  {
+    id: 'telangana-vidya-jyothi',
+    name: 'Telangana Chief Minister’s Meritorious Student Academic Assistance',
+    slug: 'telangana-vidya-jyothi',
+    shortDescription: 'Annual incentive grant of ₹20,000 to ₹35,000 and free digital study kit for college students in Telangana.',
+    description: 'Special welfare assistance scheme enacted by the Government of Telangana to support undergraduate, polytechnic, engineering, and medical students with textbook grants, digital learning kits, and living allowances.',
+    category: 'Scholarships',
+    state: 'Telangana',
+    governmentLevel: 'State',
+    department: 'Higher Education Department, Government of Telangana',
+    financialBenefitAmount: '₹25,000 annual academic allowance + digital study toolkit',
+    benefits: [
+      'Direct annual cash incentive of ₹25,000 directly deposited into the student’s bank account',
+      'Subsidized digital equipment and academic textbook allowance',
+      'Coverage for college examination fees and hostel maintenance'
+    ],
+    eligibility: [
+      'Permanent domiciled resident student of Telangana',
+      'Currently enrolled in full-time recognized degree, diploma, or professional university courses in Telangana',
+      'Annual family income under ₹2.5 Lakhs per annum',
+      'Minimum 75% attendance in current academic year'
+    ],
+    eligibilityRules: {
+      minAge: 16,
+      maxAge: 30,
+      states: ['Telangana'],
+      maxIncome: 250000,
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'Aadhaar Card showing Telangana address',
+      'Current College Bonafide / Study Certificate',
+      'Income Certificate issued by Tahsildar',
+      'Previous semester / year marks sheet',
+      'Aadhaar-seeded Bank Account Passbook'
+    ],
+    applicationProcess: [
+      'Apply online via Telangana ePASS or Praja Palana student services portal',
+      'College Principal verifies student bonafide details and semester attendance',
+      'District Welfare Officer approves the DBT sanction'
+    ],
+    deadline: '15 November 2026',
+    deadlineDate: '2026-11-15',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://telanganaepass.cgg.gov.in',
+    officialSource: 'Higher Education Department, Government of Telangana',
+    lastUpdated: 'August 2026',
+    tags: ['telangana', 'state scheme', 'scholarship', 'student', 'college', 'academic assistance']
+  },
+  {
+    id: 'telangana-task-training',
+    name: 'Telangana Academy for Skill and Knowledge (TASK) Youth Training Subsidy',
+    slug: 'telangana-task-training',
+    shortDescription: '100% subsidized industry-aligned IT, AI, electronics, and aerospace certifications and placement drives for Telangana college students.',
+    description: 'An initiative of the IT, E&C Department, Government of Telangana, to enhance employability and industry readiness among degree, polytechnic, and engineering students across Telangana through subsidized corporate skill certifications and campus drives.',
+    category: 'Student Welfare',
+    state: 'Telangana',
+    governmentLevel: 'State',
+    department: 'Information Technology, Electronics & Communications (ITE&C), Govt of Telangana',
+    financialBenefitAmount: '100% subsidized technology certifications (worth ₹50,000+) & direct recruitment drives',
+    benefits: [
+      'Full subsidy on global tech certifications in Cloud, AI, Full-Stack, VLSI, and Automotive software',
+      'Exclusive recruitment placement drives with top tech and manufacturing MNCs',
+      'Soft skills, aptitude, and interview preparation workshops'
+    ],
+    eligibility: [
+      'Students pursuing Polytechnic, Degree, B.Tech, MCA, or MBA in recognized Telangana colleges',
+      'Domicile of Telangana State',
+      'Age between 17 and 28 years'
+    ],
+    eligibilityRules: {
+      minAge: 17,
+      maxAge: 28,
+      states: ['Telangana'],
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'College Identity Card',
+      'Aadhaar Card with Telangana address',
+      'Semester Enrollment confirmation'
+    ],
+    applicationProcess: [
+      'Register online on TASK official portal (task.telangana.gov.in) with student college roll number',
+      'Select technical training modules and industry partner tracks',
+      'Attend online/offline labs and appear for campus recruitment'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://task.telangana.gov.in',
+    officialSource: 'ITE&C Department, Government of Telangana',
+    lastUpdated: 'August 2026',
+    tags: ['telangana', 'state scheme', 'skill development', 'training', 'task', 'student', 'jobs']
+  },
 
   // ===================== MAHARASHTRA =====================
   {

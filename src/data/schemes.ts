@@ -325,7 +325,7 @@ const BASE_SCHEMES: Scheme[] = [
     eligibilityRules: {
       minAge: 18,
       maxAge: 65,
-      requiresWomanEntrepreneur: false
+      requiresBusinessOwner: true
     },
     requiredDocuments: [
       'Aadhaar Card and PAN Card',
@@ -373,7 +373,8 @@ const BASE_SCHEMES: Scheme[] = [
     ],
     eligibilityRules: {
       minAge: 18,
-      maxAge: 70
+      maxAge: 70,
+      requiresArtisan: true
     },
     requiredDocuments: [
       'Aadhaar Card (Aadhaar authentication mandatory)',
@@ -466,7 +467,8 @@ const BASE_SCHEMES: Scheme[] = [
     eligibilityRules: {
       minAge: 18,
       maxAge: 40,
-      maxIncome: 500000
+      maxIncome: 500000,
+      requiresUnorganizedWorker: true
     },
     requiredDocuments: [
       'Aadhaar Card',
@@ -659,7 +661,8 @@ const BASE_SCHEMES: Scheme[] = [
     ],
     eligibilityRules: {
       minAge: 18,
-      maxAge: 70
+      maxAge: 70,
+      requiresStreetVendor: true
     },
     requiredDocuments: [
       'Aadhaar Card',
@@ -705,7 +708,8 @@ const BASE_SCHEMES: Scheme[] = [
     eligibilityRules: {
       minAge: 18,
       categories: ['SC', 'ST'],
-      requiresWomanEntrepreneur: true
+      requiresWomanEntrepreneur: true,
+      requiresBusinessOwner: true
     },
     requiredDocuments: [
       'Aadhaar Card and PAN Card',
@@ -825,6 +829,107 @@ const BASE_SCHEMES: Scheme[] = [
     officialSource: 'Government of Telangana, Department of Agriculture',
     lastUpdated: 'August 2026',
     tags: ['telangana', 'farmer', 'agriculture', 'rythu bharosa', 'state scheme']
+  },
+  {
+    id: 'centrally-sponsored-post-matric-obc',
+    name: 'Centrally Sponsored Post-Matric Scholarship for OBC / EBC Students',
+    slug: 'centrally-sponsored-post-matric-obc',
+    shortDescription: 'Full tuition fee waiver, maintenance allowances, and academic incentives for OBC and EBC students pursuing post-matric studies.',
+    description: 'A flagship scholarship under the Ministry of Social Justice and Empowerment offering financial support to Other Backward Classes (OBC), Economically Backward Classes (EBC), and De-notified Tribes (DNT) students pursuing Class 11, 12, ITI, Polytechnic, Degree, PG, and Professional courses.',
+    category: 'Scholarships',
+    state: 'All India',
+    governmentLevel: 'Central',
+    department: 'Department of Social Justice and Empowerment, Ministry of Social Justice and Empowerment',
+    financialBenefitAmount: 'Full non-refundable institutional fee waiver + up to ₹12,000/year maintenance allowance',
+    benefits: [
+      '100% compulsory non-refundable tuition and examination fee reimbursement',
+      'Annual maintenance allowance for hostellers (up to ₹12,000) and day scholars (up to ₹6,000)',
+      'Study tour allowances, thesis typing charges, and disability support'
+    ],
+    eligibility: [
+      'Citizen of India belonging to Other Backward Class (OBC), EBC, or DNT category',
+      'Enrolled in recognized post-matric / post-secondary education (Intermediate, Degree, Diploma, PG, Professional)',
+      'Total annual family income must not exceed ₹2.5 Lakhs per annum',
+      'Must not be availing any other government scholarship'
+    ],
+    eligibilityRules: {
+      minAge: 15,
+      maxAge: 35,
+      categories: ['OBC', 'EWS'],
+      maxIncome: 250000,
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'Aadhaar Card of the student',
+      'Valid OBC / Non-Creamy Layer (NCL) Certificate issued by competent Tahsildar / Revenue Authority',
+      'Income Certificate (under ₹2.5 Lakhs)',
+      'Previous examination mark sheets (SSC / 10th / Intermediate)',
+      'College Bonafide Certificate & Admission Fee Receipt',
+      'Aadhaar-seeded Bank Account details'
+    ],
+    applicationProcess: [
+      'Apply online on the National Scholarship Portal (scholarships.gov.in) or state scholarship portal',
+      'Register using Aadhaar number and fill academic and caste details',
+      'Submit institutional verification form to college nodal officer',
+      'State welfare department validates and disburses DBT funds directly into bank account'
+    ],
+    deadline: '30 November 2026',
+    deadlineDate: '2026-11-30',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://scholarships.gov.in',
+    officialSource: 'Ministry of Social Justice and Empowerment, Govt of India',
+    lastUpdated: 'August 2026',
+    tags: ['obc', 'ebc', 'post matric', 'scholarship', 'tuition fee', 'nsp', 'college', 'student']
+  },
+  {
+    id: 'pm-vidyalaxmi-scheme',
+    name: 'PM Vidyalaxmi Scheme & Central Sector Interest Subsidy (CSIS)',
+    slug: 'pm-vidyalaxmi-scheme',
+    shortDescription: 'Collateral-free higher education loans up to ₹10 Lakhs with 100% full interest subsidy during course study for students with family income up to ₹8 Lakhs.',
+    description: 'The PM Vidyalaxmi scheme is the central government initiative to ensure that no meritorious student is denied higher professional/technical education due to financial constraints. Provides collateral-free, guarantor-free education loans from scheduled banks with complete government interest subsidy during the moratorium period (course duration + 1 year) for families with income up to ₹8 Lakhs per annum.',
+    category: 'Scholarships',
+    state: 'All India',
+    governmentLevel: 'Central',
+    department: 'Department of Higher Education, Ministry of Education, Government of India',
+    financialBenefitAmount: 'Up to ₹10 Lakhs collateral-free loan + 100% full interest subsidy during course study',
+    benefits: [
+      '100% full interest subsidy covered by the Central Government during moratorium period (Course + 1 year)',
+      'No collateral or third-party guarantee required for loans up to ₹7.5 Lakhs and ₹10 Lakhs',
+      'Single window digital platform to apply and track loans across 40+ scheduled banks'
+    ],
+    eligibility: [
+      'Indian national student admitted to approved professional / technical courses in recognized higher education institutions in India',
+      'Annual gross family income from all sources must not exceed ₹8.0 Lakhs per annum',
+      'Course must be approved by AICTE, UGC, or relevant statutory body',
+      'Must apply through the official PM Vidyalaxmi portal'
+    ],
+    eligibilityRules: {
+      minAge: 17,
+      maxAge: 35,
+      maxIncome: 800000,
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'Aadhaar Card and PAN Card of student and co-borrower parent',
+      'Admission Letter / Proof of Admission to approved higher education course',
+      'Income Certificate issued by designated state revenue authority (under ₹8 Lakhs)',
+      '10th, 12th, and Degree Marksheets',
+      'Fee Structure schedule issued by College / University',
+      'Bank Account details of applicant'
+    ],
+    applicationProcess: [
+      'Visit the official PM Vidyalaxmi / Vidya Lakshmi portal (vidyalakshmi.co.in)',
+      'Register and complete Common Education Loan Application Form (CELAF)',
+      'Search and select preferred bank schemes for interest subsidy',
+      'Upload verified admission letter, fee structure, and income certificate for bank approval'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://www.vidyalakshmi.co.in',
+    officialSource: 'Department of Higher Education, Ministry of Education, Govt of India',
+    lastUpdated: 'August 2026',
+    tags: ['education loan', 'interest subsidy', 'vidyalaxmi', 'higher education', 'college', 'technical']
   }
 ];
 

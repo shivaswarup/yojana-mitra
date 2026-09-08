@@ -433,32 +433,84 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
     ]);
   };
 
-  // Render markdown with basic formatting
+  // Render markdown with basic formatting, links, and code
   const formatText = (text: string) => {
     const lines = text.split('\n');
     return lines.map((line, idx) => {
-      // Bold text replacement
-      const parts = line.split(/(\*\*.*?\*\*)/g);
-      const formattedParts = parts.map((part, pIdx) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={pIdx} className="font-bold text-stone-900">{part.slice(2, -2)}</strong>;
+      // Inline link & bold parser
+      const renderInline = (str: string) => {
+        // Match [Label](url) OR raw url https://...
+        const linkRegex = /(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|https?:\/\/[^\s\)\],]+)/g;
+        const segments: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = linkRegex.exec(str)) !== null) {
+          if (match.index > lastIndex) {
+            segments.push(parseBold(str.substring(lastIndex, match.index), segments.length));
+          }
+
+          const full = match[0];
+          let url = full;
+          let label = full;
+
+          if (match[2] && match[3]) {
+            label = match[2];
+            url = match[3];
+          } else {
+            url = full.replace(/[\.\,\;\:\)\*\_]+$/, '');
+            try {
+              label = new URL(url).hostname.replace(/^www\./, '');
+            } catch {
+              label = url;
+            }
+          }
+
+          segments.push(
+            <a
+              key={`link-${segments.length}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-emerald-800 hover:text-emerald-950 underline decoration-emerald-500 hover:decoration-2 transition-all mx-0.5 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
+            >
+              <span>{label}</span>
+              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+            </a>
+          );
+          lastIndex = linkRegex.lastIndex;
         }
-        return part;
-      });
+
+        if (lastIndex < str.length) {
+          segments.push(parseBold(str.substring(lastIndex), segments.length));
+        }
+
+        return segments.length > 0 ? segments : parseBold(str, 0);
+      };
+
+      const parseBold = (sub: string, keyPrefix: number) => {
+        const parts = sub.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, pIdx) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={`${keyPrefix}-${pIdx}`} className="font-bold text-stone-900">{part.slice(2, -2)}</strong>;
+          }
+          return part;
+        });
+      };
 
       if (line.startsWith('### ')) {
-        return <h4 key={idx} className="font-bold text-stone-900 text-xs mt-2 mb-1">{line.replace('### ', '')}</h4>;
+        return <h4 key={idx} className="font-bold text-stone-900 text-xs mt-2 mb-1">{renderInline(line.replace('### ', ''))}</h4>;
       }
       if (line.startsWith('## ')) {
-        return <h3 key={idx} className="font-bold text-stone-900 text-sm mt-2 mb-1">{line.replace('## ', '')}</h3>;
+        return <h3 key={idx} className="font-bold text-stone-900 text-sm mt-2 mb-1">{renderInline(line.replace('## ', ''))}</h3>;
       }
       if (line.startsWith('# ')) {
-        return <h2 key={idx} className="font-bold text-stone-900 text-base mt-2 mb-1">{line.replace('# ', '')}</h2>;
+        return <h2 key={idx} className="font-bold text-stone-900 text-base mt-2 mb-1">{renderInline(line.replace('# ', ''))}</h2>;
       }
       if (line.startsWith('- ') || line.startsWith('* ')) {
         return (
           <li key={idx} className="ml-4 list-disc text-stone-700 text-xs leading-relaxed my-0.5">
-            {formattedParts}
+            {renderInline(line.replace(/^[\-\*]\s+/, ''))}
           </li>
         );
       }
@@ -468,7 +520,7 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
 
       return (
         <p key={idx} className="text-stone-700 text-xs leading-relaxed my-0.5">
-          {formattedParts}
+          {renderInline(line)}
         </p>
       );
     });

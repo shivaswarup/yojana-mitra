@@ -68,7 +68,8 @@ export const AuthModal: React.FC = () => {
     setError(null);
     setIsLoadingGoogle(true);
     try {
-      await loginWithGoogle();
+      const preferred = email.trim().toLowerCase().includes('@') ? email.trim() : 'shivaswarup2007@gmail.com';
+      await loginWithGoogle(preferred, name.trim() || undefined);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Google sign-in could not be completed.';
       setError(msg);

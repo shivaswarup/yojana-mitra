@@ -67,7 +67,8 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
 
   if (allowedStates.length > 0 && !allowedStates.includes('All India')) {
     totalFactors += 2;
-    if (allowedStates.includes(state)) {
+    const isStateMatch = allowedStates.some(st => st.toLowerCase() === state.toLowerCase());
+    if (isStateMatch) {
       matchedFactors += 2;
       reasons.push({
         matched: true,
@@ -82,12 +83,16 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
         });
       }
     } else {
-      unmetCriteria.push(`Applicable in ${allowedStates.join(', ')} only (Your state: ${state})`);
+      unmetCriteria.push(`Exclusively for residents of ${allowedStates.join(', ')} (Your state: ${state})`);
       reasons.push({
         matched: false,
         criterion: 'State Domicile',
         detail: `Available exclusively for residents of ${allowedStates.join(', ')}.`
       });
+    }
+  } else if (scheme.governmentLevel === 'State' && scheme.state && scheme.state !== 'All India') {
+    if (scheme.state.toLowerCase() !== state.toLowerCase()) {
+      unmetCriteria.push(`Exclusively for residents of ${scheme.state} (Your state: ${state})`);
     }
   }
 
@@ -154,8 +159,8 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
     }
   }
 
-  // 7. Farmer status
-  if (rules.requiresFarmer) {
+  // 7. Farmer status & Agricultural schemes
+  if (rules.requiresFarmer || scheme.category === 'Agriculture') {
     totalFactors += 3;
     if (profile.isFarmer || employmentStatus === 'Farmer' || occupation.toLowerCase().includes('farmer') || occupation.toLowerCase().includes('agri')) {
       matchedFactors += 3;
@@ -165,7 +170,7 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
         detail: 'You are identified as a farmer / agricultural landholder.'
       });
     } else {
-      unmetCriteria.push('Requires landholding farmer or agricultural status');
+      unmetCriteria.push('Requires landholding farmer or agricultural cultivator status');
       reasons.push({
         matched: false,
         criterion: 'Agricultural Profile',
@@ -174,7 +179,85 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
     }
   }
 
-  // 8. Woman Entrepreneur
+  // 8. Business Owner / Enterprise Schemes (e.g. MUDRA, Udyami, Stand-Up India)
+  if (rules.requiresBusinessOwner || scheme.category === 'Business') {
+    totalFactors += 2;
+    const isBusiness = profile.isBusinessOwner || profile.isWomanEntrepreneur || employmentStatus === 'Self-Employed / Business' || occupation.toLowerCase().includes('business') || occupation.toLowerCase().includes('shop');
+    if (isBusiness) {
+      matchedFactors += 2;
+      reasons.push({
+        matched: true,
+        criterion: 'Business / Enterprise Profile',
+        detail: 'You meet the entrepreneur/business owner criteria for commercial credit.'
+      });
+    } else if (profile.isStudent || employmentStatus === 'Student') {
+      unmetCriteria.push('Designated for commercial business owners & entrepreneurs, not active students');
+      reasons.push({
+        matched: false,
+        criterion: 'Business Profile',
+        detail: 'Designed for active micro and small business entrepreneurs.'
+      });
+    }
+  }
+
+  // 9. Artisan / Craftsperson schemes (e.g. PM Vishwakarma)
+  if (rules.requiresArtisan || scheme.id === 'pm-vishwakarma-yojana') {
+    totalFactors += 2;
+    const isArtisan = profile.employmentStatus === 'Daily Wage Worker / Artisan' || occupation.toLowerCase().includes('artisan') || occupation.toLowerCase().includes('craft') || occupation.toLowerCase().includes('carpenter') || occupation.toLowerCase().includes('tailor') || occupation.toLowerCase().includes('potter');
+    if (isArtisan) {
+      matchedFactors += 2;
+      reasons.push({
+        matched: true,
+        criterion: 'Artisan / Traditional Trade Profile',
+        detail: 'You work in one of the 18 recognized traditional artisan trades.'
+      });
+    } else {
+      unmetCriteria.push('Requires traditional artisan or craftsperson working with hands and tools');
+      reasons.push({
+        matched: false,
+        criterion: 'Artisan Profile',
+        detail: 'Exclusively for traditional artisans and craftspersons.'
+      });
+    }
+  }
+
+  // 10. Street Vendor schemes (e.g. PM SVANidhi)
+  if (rules.requiresStreetVendor || scheme.id === 'pm-svanidhi-scheme') {
+    totalFactors += 2;
+    const isVendor = occupation.toLowerCase().includes('vendor') || occupation.toLowerCase().includes('hawker');
+    if (isVendor) {
+      matchedFactors += 2;
+      reasons.push({
+        matched: true,
+        criterion: 'Street Vendor Profile',
+        detail: 'You qualify as an urban/rural street vendor.'
+      });
+    } else {
+      unmetCriteria.push('Requires street vendor / hawker vending certificate or recommendation');
+    }
+  }
+
+  // 11. Pension / Senior Citizen schemes (e.g. Atal Pension Yojana, Old Age Pensions)
+  if (rules.requiresSeniorCitizen || scheme.category === 'Pension' || scheme.id === 'atal-pension-yojana' || scheme.id === 'mukhyamantri-vridhjan-pension-bihar') {
+    totalFactors += 2;
+    if (profile.isSeniorCitizen || age >= 60) {
+      matchedFactors += 2;
+      reasons.push({
+        matched: true,
+        criterion: 'Senior Citizen Pension Criterion',
+        detail: 'You qualify under senior citizen social security.'
+      });
+    } else if (profile.isStudent || age < 25) {
+      unmetCriteria.push('Designated for unorganized laborers and senior citizens, not active students');
+      reasons.push({
+        matched: false,
+        criterion: 'Pension Scope',
+        detail: 'Designed for unorganized sector wage earners nearing old age.'
+      });
+    }
+  }
+
+  // 12. Woman Entrepreneur
   if (rules.requiresWomanEntrepreneur) {
     totalFactors += 2;
     if (gender === 'female' && (profile.isWomanEntrepreneur || profile.isBusinessOwner)) {
@@ -196,7 +279,7 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
     }
   }
 
-  // 9. Area Type (Rural / Urban)
+  // 13. Area Type (Rural / Urban)
   if (rules.areaType && rules.areaType !== 'Both') {
     totalFactors += 1;
     if (areaType === rules.areaType) {
@@ -211,7 +294,7 @@ export function evaluateSchemeEligibility(scheme: Scheme, profile: UserProfile):
     }
   }
 
-  // 10. Marital Status
+  // 14. Marital Status
   if (rules.maritalStatuses && rules.maritalStatuses.length > 0) {
     totalFactors += 2;
     if (rules.maritalStatuses.includes(maritalStatus)) {
@@ -293,8 +376,19 @@ export function matchSchemesFromAiResponse(
   if (!aiText) return [];
   const textLower = aiText.toLowerCase();
 
+  // Deduplication map
+  const seenIds = new Set<string>();
+
   // 1. Identify schemes explicitly mentioned in the chatbot's reply text
   const mentioned = candidateSchemes.filter(scheme => {
+    // If user profile is provided, strictly enforce no schemes out of user details
+    if (userProfile) {
+      const eligibility = evaluateSchemeEligibility(scheme, userProfile);
+      if (eligibility.unmetCriteria.length > 0) {
+        return false;
+      }
+    }
+
     const nameLower = scheme.name.toLowerCase();
     const nameWithoutParen = nameLower.replace(/\([^)]*\)/g, '').trim();
     
@@ -302,19 +396,21 @@ export function matchSchemesFromAiResponse(
     const acronymMatch = scheme.name.match(/\(([^)]+)\)/);
     const acronym = acronymMatch ? acronymMatch[1].trim().toLowerCase() : '';
 
-    if (textLower.includes(nameLower)) return true;
-    if (nameWithoutParen.length >= 6 && textLower.includes(nameWithoutParen)) return true;
-    if (acronym.length >= 3 && textLower.includes(acronym)) return true;
-    if (scheme.slug && textLower.includes(scheme.slug.toLowerCase())) return true;
+    let isMatch = false;
+    if (textLower.includes(nameLower)) {
+      isMatch = true;
+    } else if (nameWithoutParen.length >= 6 && textLower.includes(nameWithoutParen)) {
+      isMatch = true;
+    } else if (acronym.length >= 3 && (textLower.includes(` ${acronym} `) || textLower.includes(`(${acronym})`) || textLower.includes(`**${acronym}**`))) {
+      isMatch = true;
+    } else if (scheme.slug && textLower.includes(scheme.slug.toLowerCase())) {
+      isMatch = true;
+    }
 
-    // Check distinctive keywords in tags
-    const meaningfulTags = scheme.tags.filter(t => 
-      t.length >= 4 && 
-      !['state scheme', 'central scheme', 'scholarship', 'welfare', 'scheme', 'government', 'india', 'state'].includes(t.toLowerCase())
-    );
-    const matchedTags = meaningfulTags.filter(t => textLower.includes(t.toLowerCase()));
-    if (matchedTags.length >= 2) return true;
-
+    if (isMatch && !seenIds.has(scheme.id)) {
+      seenIds.add(scheme.id);
+      return true;
+    }
     return false;
   });
 
@@ -322,20 +418,35 @@ export function matchSchemesFromAiResponse(
     return mentioned;
   }
 
-  // 2. If exact scheme names were not verbatim, filter strictly to schemes the citizen qualifies for
+  // 2. If exact scheme names were not verbatim in the text, filter strictly to candidate schemes that match user profile
   if (userProfile) {
-    const qualified = candidateSchemes.filter(s => {
-      const evalRes = evaluateSchemeEligibility(s, userProfile);
-      return evalRes.unmetCriteria.length === 0 && evalRes.matchScore >= 60;
-    });
-    if (qualified.length > 0) {
-      return qualified;
-    }
-    
-    return [...candidateSchemes]
-      .sort((a, b) => evaluateSchemeEligibility(b, userProfile).matchScore - evaluateSchemeEligibility(a, userProfile).matchScore)
-      .slice(0, 3);
+    const qualified = candidateSchemes
+      .filter(s => {
+        if (seenIds.has(s.id)) return false;
+        const evalRes = evaluateSchemeEligibility(s, userProfile);
+        return evalRes.unmetCriteria.length === 0;
+      })
+      .sort((a, b) => {
+        // If student, prioritize Scholarships & Education
+        if (userProfile.isStudent) {
+          const aEdu = (a.category === 'Scholarships' || a.category === 'Education' || a.category === 'Student Welfare') ? 1 : 0;
+          const bEdu = (b.category === 'Scholarships' || b.category === 'Education' || b.category === 'Student Welfare') ? 1 : 0;
+          if (bEdu !== aEdu) return bEdu - aEdu;
+        }
+        return 0;
+      });
+
+    return qualified.slice(0, 6);
   }
 
-  return candidateSchemes.slice(0, 4);
+  // 3. Fallback for unauthenticated guest: only return broad public education/welfare schemes
+  return candidateSchemes.filter(s => {
+    if (seenIds.has(s.id)) return false;
+    // Exclude restricted categories in fallback
+    if (s.category === 'Business' || s.category === 'Agriculture' || s.category === 'Pension') {
+      return false;
+    }
+    seenIds.add(s.id);
+    return true;
+  }).slice(0, 4);
 }

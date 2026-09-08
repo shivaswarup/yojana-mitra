@@ -95,6 +95,10 @@ export interface EligibilityRules {
   requiresMinority?: boolean;
   requiresWomanEntrepreneur?: boolean;
   requiresSeniorCitizen?: boolean;
+  requiresBusinessOwner?: boolean;
+  requiresArtisan?: boolean;
+  requiresStreetVendor?: boolean;
+  requiresUnorganizedWorker?: boolean;
   areaType?: 'Rural' | 'Urban' | 'Both';
   maritalStatuses?: ('Single' | 'Married' | 'Widowed' | 'Divorced')[];
   specialCriteria?: string[];

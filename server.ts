@@ -28,7 +28,7 @@ function getGenAI() {
   });
 }
 
-// Resilient Gemini generation with model fallback on 503/429/high demand
+// Resilient Gemini generation with model fallback on 503/429/high demand/quota
 async function generateContentWithFallback(ai: GoogleGenAI, options: {
   contents: any;
   config?: any;
@@ -37,7 +37,7 @@ async function generateContentWithFallback(ai: GoogleGenAI, options: {
 }) {
   const modelsToTry = [
     options.primaryModel || 'gemini-3.8-flash',
-    ...(options.fallbackModels || ['gemini-flash-latest', 'gemini-3.1-flash-lite'])
+    ...(options.fallbackModels || ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'])
   ];
 
   let lastError: any = null;
@@ -54,15 +54,17 @@ async function generateContentWithFallback(ai: GoogleGenAI, options: {
       return response;
     } catch (err: any) {
       lastError = err;
-      const errMsg = err?.message || String(err);
+      const errMsg = (err?.message || String(err)).toLowerCase();
       const isTransient = 
         errMsg.includes('503') || 
         errMsg.includes('high demand') || 
-        errMsg.includes('UNAVAILABLE') || 
-        errMsg.includes('RESOURCE_EXHAUSTED') || 
+        errMsg.includes('unavailable') || 
+        errMsg.includes('resource_exhausted') || 
+        errMsg.includes('quota') ||
+        errMsg.includes('rate') ||
         errMsg.includes('429');
 
-      // If high demand on this model, immediately try the next model in pool
+      // If transient or quota limitation, try next model in pool
       if (i < modelsToTry.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 300));
         continue;
@@ -118,9 +120,10 @@ RULES & CONSTRAINTS:
    - **Target Criteria & Eligibility**
    - **Financial / Welfare Benefit**
    - **Documents Required**
-   - **Official Application Link / Portal**
-4. Do not invent or estimate deadlines. If a deadline is unavailable or subject to official notification, clearly state: "Check Official Portal".
-5. Provide concise, clear, and reassuring guidance. Explain how to prepare paperwork (e.g. Income certificate from Tehsildar, Bonafide from college, Bank Aadhaar DBT seeding) when helpful.`;
+   - **Official Application Link / Portal**: You MUST provide the direct official URL (e.g. [Official Portal](https://telanganaepass.cgg.gov.in) or https://telanganaepass.cgg.gov.in)
+4. MANDATORY OFFICIAL LINK REQUIREMENT: For EVERY single scheme or scholarship mentioned (especially for State Government schemes like Telangana, Maharashtra, UP, Karnataka, etc.), you MUST provide its valid official government application URL (e.g., [Telangana ePASS](https://telanganaepass.cgg.gov.in), [MahaDBT](https://mahadbt.maharashtra.gov.in), [SSP Portal](https://ssp.postmatric.karnataka.gov.in), [UP Scholarship](https://scholarship.up.gov.in), etc.). Never omit or leave the official link blank for ANY mentioned scheme.
+5. Do not invent or estimate deadlines. If a deadline is unavailable or subject to official notification, clearly state: "Check Official Portal".
+6. Provide concise, clear, and reassuring guidance. Explain how to prepare paperwork (e.g. Income certificate from Tehsildar, Bonafide from college, Bank Aadhaar DBT seeding) when helpful.`;
 
     // Format chat messages
     const contents: any[] = [];

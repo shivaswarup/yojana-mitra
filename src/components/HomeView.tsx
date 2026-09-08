@@ -1,33 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Sparkles, 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  ShieldAlert, 
-  UserCheck,
-  Building,
-  RefreshCw,
-  Bot,
-  ExternalLink,
-  Trash2,
-  ArrowRight,
-  Landmark,
-  MessageSquare,
-  MapPin,
-  Building2,
-  CalendarClock,
-  Clock,
-  AlertTriangle,
+  Bot, 
+  Landmark, 
+  Building, 
+  MapPin, 
   X,
-  GraduationCap,
-  UserPlus
+  Loader2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { SchemeCard } from './SchemeCard';
 import { SCHEMES_DATABASE } from '../data/schemes';
+import { STATE_DISTRICT_MAP } from '../data/statesAndDistricts';
 import { Scheme, UserProfile } from '../types';
-import { evaluateSchemeEligibility } from '../utils/recommendationEngine';
+import { evaluateSchemeEligibility, matchSchemesFromAiResponse } from '../utils/recommendationEngine';
+import { AiTextResponsePanel } from './AiTextResponsePanel';
 
 interface HomeViewProps {
   onSelectScheme: (scheme: Scheme) => void;
@@ -36,632 +22,430 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
   const { 
     currentUser, 
-    setIsChatbotOpen,
-    openChatbotWithPrompt,
+    openAuthModal,
     isAskingStateSchemes,
-    stateChatbotAnswer,
     askChatbotForStateSchemes,
+    stateChatbotAnswer,
     isAskingCentralSchemes,
-    centralChatbotAnswer,
     askChatbotForCentralSchemes,
-    expiringIn3DaysSchemes,
-    searchQuery, 
-    setSearchQuery, 
-    setActiveTab,
-    openAuthModal
+    centralChatbotAnswer,
+    searchQuery
   } = useApp();
 
-  const userState = currentUser?.state || '';
+  const [stateAiReply, setStateAiReply] = useState<string>('');
+  const [centralAiReply, setCentralAiReply] = useState<string>('');
 
-  // AI discovery state: DO NOT show schemes until user clicks "Ask AI"
+  // Active state selection for state government schemes:
+  // When logged in, strictly locked to currentUser.state.
+  // When guest, defaults to Telangana or selected state.
+  const [selectedState, setSelectedState] = useState<string>(currentUser?.state || 'Telangana');
+
+  useEffect(() => {
+    if (currentUser?.state) {
+      setSelectedState(currentUser.state);
+    }
+  }, [currentUser?.state]);
+
+  const activeStateName = currentUser?.state || selectedState || 'Telangana';
+
+  const allStates = useMemo(() => {
+    return Object.keys(STATE_DISTRICT_MAP).sort();
+  }, []);
+
+  // Effective user profile to ensure no schemes are out of user details
+  const effectiveProfile: UserProfile = useMemo(() => {
+    if (currentUser) {
+      return currentUser;
+    }
+    // Baseline profile for evaluation when guest
+    return {
+      id: 'guest-profile',
+      email: 'guest@yojanamitra.gov.in',
+      name: 'Citizen',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=guest',
+      age: 21,
+      gender: 'male',
+      state: activeStateName,
+      district: 'Hyderabad',
+      areaType: 'Urban',
+      maritalStatus: 'Single',
+      highestEducation: 'Undergraduate (UG)',
+      currentEducationStatus: 'Pursuing',
+      isStudent: true,
+      category: 'OBC',
+      isDisability: false,
+      isMinority: false,
+      annualFamilyIncome: 250000,
+      employmentStatus: 'Student',
+      occupation: 'Student',
+      isFarmer: false,
+      isBusinessOwner: false,
+      isWomanEntrepreneur: false,
+      isSeniorCitizen: false,
+      isBPLOrEWS: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }, [currentUser, activeStateName]);
+
+  // Helper function to deduplicate schemes strictly
+  const deduplicateSchemes = (list: Scheme[]): Scheme[] => {
+    const seen = new Set<string>();
+    return list.filter(scheme => {
+      if (!scheme || !scheme.id) return false;
+      if (seen.has(scheme.id)) return false;
+      seen.add(scheme.id);
+      return true;
+    });
+  };
+
+  // -------------------------------------------------------------------
+  // 1. STATE SCHEMES DATA (ONLY SHOWN WHEN USER TAPS ASK AI)
+  // -------------------------------------------------------------------
   const [stateAiQueried, setStateAiQueried] = useState<boolean>(false);
   const [stateAiSchemes, setStateAiSchemes] = useState<Scheme[]>([]);
 
-  const [centralAiQueried, setCentralAiQueried] = useState<boolean>(false);
-  const [centralAiSchemes, setCentralAiSchemes] = useState<Scheme[]>([]);
+  // Eligible pool of state schemes for active state matching user profile
+  const eligibleStatePool = useMemo(() => {
+    const list = SCHEMES_DATABASE.filter(s => {
+      const stateMatch = s.state.toLowerCase() === activeStateName.toLowerCase() ||
+        (s.eligibilityRules?.states?.some(st => st.toLowerCase() === activeStateName.toLowerCase()) ?? false);
+      if (!stateMatch) return false;
 
-  // Banner dismissal state for 3-day deadline alert
-  const [isAlertDismissed, setIsAlertDismissed] = useState<boolean>(false);
+      // Strictly verify no schemes are out of user details
+      const evalRes = evaluateSchemeEligibility(s, effectiveProfile);
+      return evalRes.unmetCriteria.length === 0;
+    });
 
-  // Handle "Ask AI for State Schemes"
+    return deduplicateSchemes(list);
+  }, [activeStateName, effectiveProfile]);
+
+  // Handle Ask AI for State Schemes
   const handleAskStateAi = async () => {
     if (!currentUser) {
       openAuthModal('login');
       return;
     }
+
     setStateAiQueried(true);
-    const result = await askChatbotForStateSchemes(userState);
+    const result = await askChatbotForStateSchemes(activeStateName);
+    if (result && result.reply) {
+      setStateAiReply(result.reply);
+    }
     if (result.foundSchemes && result.foundSchemes.length > 0) {
-      setStateAiSchemes(result.foundSchemes);
-    } else {
-      // Fallback to all state schemes for user's state without leaving anything
-      const matchingState = SCHEMES_DATABASE.filter(s => {
-        return s.state.toLowerCase() === userState.toLowerCase() ||
-          (s.eligibilityRules?.states?.some(st => st.toLowerCase() === userState.toLowerCase()) ?? false);
+      // Strictly enforce user details & deduplicate live chatbot given schemes
+      const strictlyEligible = result.foundSchemes.filter(s => {
+        const evalRes = evaluateSchemeEligibility(s, effectiveProfile);
+        return evalRes.unmetCriteria.length === 0;
       });
-      setStateAiSchemes(matchingState);
+      setStateAiSchemes(deduplicateSchemes(strictlyEligible));
+    } else {
+      // Extract mentioned schemes from live response strictly adhering to user details
+      const matched = matchSchemesFromAiResponse(result.reply, eligibleStatePool, effectiveProfile);
+      setStateAiSchemes(deduplicateSchemes(matched));
     }
   };
 
-  // Handle "Ask AI for Central Schemes"
+  // Active state schemes to show (EMPTY unless stateAiQueried is true)
+  const activeStateSchemes = useMemo(() => {
+    if (!stateAiQueried) return [];
+    if (!searchQuery.trim()) return stateAiSchemes;
+    const q = searchQuery.toLowerCase().trim();
+    return stateAiSchemes.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.shortDescription.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q) ||
+      s.department.toLowerCase().includes(q) ||
+      s.tags.some(t => t.toLowerCase().includes(q))
+    );
+  }, [stateAiQueried, stateAiSchemes, searchQuery]);
+
+  // -------------------------------------------------------------------
+  // 2. CENTRAL SCHEMES DATA (ONLY SHOWN WHEN USER TAPS ASK AI)
+  // -------------------------------------------------------------------
+  const [centralAiQueried, setCentralAiQueried] = useState<boolean>(false);
+  const [centralAiSchemes, setCentralAiSchemes] = useState<Scheme[]>([]);
+
+  // Eligible pool of central schemes matching user profile
+  const eligibleCentralPool = useMemo(() => {
+    const list = SCHEMES_DATABASE.filter(s => {
+      const isCentral = s.governmentLevel === 'Central' || s.governmentLevel === 'All India';
+      if (!isCentral) return false;
+
+      // Strictly verify no schemes are out of user details
+      const evalRes = evaluateSchemeEligibility(s, effectiveProfile);
+      return evalRes.unmetCriteria.length === 0;
+    });
+
+    return deduplicateSchemes(list);
+  }, [effectiveProfile]);
+
+  // Handle Ask AI for Central Schemes
   const handleAskCentralAi = async () => {
     if (!currentUser) {
       openAuthModal('login');
       return;
     }
+
     setCentralAiQueried(true);
     const result = await askChatbotForCentralSchemes();
+    if (result && result.reply) {
+      setCentralAiReply(result.reply);
+    }
     if (result.foundSchemes && result.foundSchemes.length > 0) {
-      setCentralAiSchemes(result.foundSchemes);
-    } else {
-      // Fallback: all eligible central schemes
-      const matchingCentral = SCHEMES_DATABASE.filter(s => {
-        const isCentral = s.governmentLevel === 'Central' || s.governmentLevel === 'All India';
-        if (!isCentral) return false;
-        if (!currentUser) return true;
-        const evalRes = evaluateSchemeEligibility(s, currentUser);
+      // Strictly enforce user details & deduplicate live chatbot given schemes
+      const strictlyEligible = result.foundSchemes.filter(s => {
+        const evalRes = evaluateSchemeEligibility(s, effectiveProfile);
         return evalRes.unmetCriteria.length === 0;
       });
-      setCentralAiSchemes(matchingCentral);
+      setCentralAiSchemes(deduplicateSchemes(strictlyEligible));
+    } else {
+      // Extract mentioned schemes from live response strictly adhering to user details
+      const matched = matchSchemesFromAiResponse(result.reply, eligibleCentralPool, effectiveProfile);
+      setCentralAiSchemes(deduplicateSchemes(matched));
     }
   };
 
-  // Filter state schemes if user typed a search query
-  const filteredStateSchemes = useMemo(() => {
-    if (!searchQuery.trim()) return stateAiSchemes;
-    const q = searchQuery.toLowerCase().trim();
-    return stateAiSchemes.filter(s => 
-      s.name.toLowerCase().includes(q) ||
-      s.shortDescription.toLowerCase().includes(q) ||
-      s.category.toLowerCase().includes(q) ||
-      s.department.toLowerCase().includes(q) ||
-      s.tags.some(t => t.toLowerCase().includes(q))
-    );
-  }, [stateAiSchemes, searchQuery]);
-
-  // Filter central schemes if user typed a search query
-  const filteredCentralSchemes = useMemo(() => {
+  // Active central schemes to show (EMPTY unless centralAiQueried is true)
+  const activeCentralSchemes = useMemo(() => {
+    if (!centralAiQueried) return [];
     if (!searchQuery.trim()) return centralAiSchemes;
     const q = searchQuery.toLowerCase().trim();
-    return centralAiSchemes.filter(s => 
+    return centralAiSchemes.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.shortDescription.toLowerCase().includes(q) ||
       s.category.toLowerCase().includes(q) ||
       s.department.toLowerCase().includes(q) ||
       s.tags.some(t => t.toLowerCase().includes(q))
     );
-  }, [centralAiSchemes, searchQuery]);
-
-  // Guest search query results when actively searching
-  const guestFilteredSchemes = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().trim();
-    return SCHEMES_DATABASE.filter(s => 
-      s.name.toLowerCase().includes(q) ||
-      s.shortDescription.toLowerCase().includes(q) ||
-      s.category.toLowerCase().includes(q) ||
-      s.department.toLowerCase().includes(q) ||
-      s.state.toLowerCase().includes(q) ||
-      s.tags.some(t => t.toLowerCase().includes(q))
-    );
-  }, [searchQuery]);
+  }, [centralAiQueried, centralAiSchemes, searchQuery]);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-10 pb-16">
 
-      {/* ---------------------------------------------------- */}
-      {/* 3-DAY DEADLINE NOTIFICATION BANNER (CRITICAL ALERT) */}
-      {/* ---------------------------------------------------- */}
-      {!isAlertDismissed && expiringIn3DaysSchemes.length > 0 && (
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 border-2 border-red-300/80 rounded-2xl shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-xs relative mt-0.5">
-                <CalendarClock className="w-5 h-5 animate-pulse" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-ping" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black uppercase tracking-wider">
-                    🚨 3 Days Left • Deadline Alert
-                  </span>
-                  <span className="text-xs font-semibold text-red-950">
-                    Application window closing for {expiringIn3DaysSchemes.length} verified {expiringIn3DaysSchemes.length === 1 ? 'scheme' : 'schemes'}!
-                  </span>
-                </div>
-                <p className="text-xs text-stone-700 leading-relaxed max-w-3xl">
-                  Official cut-off expires in <strong>3 days or less</strong>. Complete and submit your application with verified documents on the government portal before the portal closes.
-                </p>
-
-                {/* List of Expiring Schemes */}
-                <div className="flex flex-wrap gap-2 pt-1.5">
-                  {expiringIn3DaysSchemes.map(({ scheme, daysLeft, statusText }) => (
-                    <div
-                      key={scheme.id}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/90 border border-red-200 rounded-lg shadow-2xs hover:bg-white transition-all cursor-pointer group"
-                      onClick={() => onSelectScheme(scheme)}
-                    >
-                      <Clock className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                      <span className="text-xs font-bold text-stone-900 group-hover:text-red-700 transition-colors">
-                        {scheme.name}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 text-[10px] font-black">
-                        {daysLeft === 0 ? 'Today!' : `${daysLeft} Days Left`}
-                      </span>
-                      <ArrowRight className="w-3 h-3 text-red-500 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* ==================================================== */}
+      {/* SECTION 1: STATE SCHEMES                            */}
+      {/* ==================================================== */}
+      <section className="space-y-4">
+        
+        {/* State Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-amber-200">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-amber-100 text-amber-900">
+                <Landmark className="w-5 h-5" />
+              </span>
+              <h2 className="text-xl font-bold text-stone-900 tracking-tight">
+                {activeStateName} State Schemes
+              </h2>
             </div>
-
-            {/* Dismiss & View Actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setActiveTab('deadlines')}
-                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-900 hover:text-red-950 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
-              >
-                <span>All Deadlines</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setIsAlertDismissed(true)}
-                className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
-                title="Dismiss Alert"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Official Government Portal Welcome Banner if guest */}
-      {!currentUser && (
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-950 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/50">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-700/70 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider text-emerald-200">
-              <span>🏛️</span>
-              <span>National Scheme & Scholarship Portal</span>
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-white">
-              Official Government Schemes & Financial Aids Finder
-            </h2>
-            <p className="text-xs text-emerald-100/80 leading-relaxed">
-              Sign up or log in to check your personalized eligibility for Central DBT subsidies, student scholarships, state farmer grants, and startup benefits securely verified by AI.
+            <p className="text-xs text-stone-600">
+              State welfare initiatives and scholarships enacted by the <strong>Government of {activeStateName}</strong>.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {/* State Domicile Indicator:
+                AFTER LOGIN: Option of choosing state is completely deleted; locked to currentUser.state.
+                BEFORE LOGIN: Guest users can select state. */}
+            {currentUser ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100/80 border border-amber-300 rounded-xl text-xs shadow-2xs">
+                <MapPin className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                <span className="font-semibold text-stone-600 text-[11px]">State Domicile:</span>
+                <span className="font-bold text-amber-950 text-xs">{currentUser.state}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-xs">
+                <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <span className="font-semibold text-stone-600 text-[11px]">State:</span>
+                <select
+                  value={selectedState}
+                  onChange={(e) => {
+                    setSelectedState(e.target.value);
+                    setStateAiQueried(false);
+                    setStateAiSchemes([]);
+                  }}
+                  className="bg-transparent font-bold text-amber-950 text-xs focus:outline-none cursor-pointer pr-1"
+                >
+                  {allStates.map(st => (
+                    <option key={st} value={st} className="text-stone-900">
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Ask AI for State Schemes Button */}
             <button
-              onClick={() => openAuthModal('login')}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 transition-all cursor-pointer"
+              onClick={handleAskStateAi}
+              disabled={isAskingStateSchemes}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
+              title={`Click to ask AI for verified ${activeStateName} schemes`}
             >
-              Log In
-            </button>
-            <button
-              onClick={() => openAuthModal('signup')}
-              className="px-4 py-2.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Create Account</span>
+              {isAskingStateSchemes ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+              <span>{isAskingStateSchemes ? `Scanning ${activeStateName}...` : `Ask AI for ${activeStateName} Schemes`}</span>
             </button>
           </div>
         </div>
-      )}
 
-      {/* ==================================================== */}
-      {/* SECTION 1 & 2: REVEALED AFTER CITIZEN LOGS IN */}
-      {/* ==================================================== */}
-      {currentUser ? (
-        <>
-          {/* SECTION 1 (TOP): STATE GOVERNMENT SCHEMES & SCHOLARSHIPS */}
-          <section className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-amber-200">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-lg bg-amber-100 text-amber-900">
-                    <Landmark className="w-5 h-5" />
-                  </span>
-                  <h2 className="text-xl font-bold text-stone-900 tracking-tight">
-                    {userState} State Government Schemes & Scholarships
-                  </h2>
-                </div>
-                <p className="text-stone-600 text-xs">
-                  Official welfare programs, higher education tuition reimbursements, and youth entitlements enacted by the <strong>Government of {userState}</strong>.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full text-xs font-bold">
-                  🏛️ {userState} Domicile
-                </span>
-              </div>
+        {/* CONDITION: ONLY SHOW SCHEMES IF USER TAPS ASK AI */}
+        {!stateAiQueried && !stateChatbotAnswer ? (
+          <div className="bg-amber-50/40 border border-dashed border-amber-300 rounded-2xl p-8 sm:p-10 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 mx-auto flex items-center justify-center shadow-2xs">
+              <Landmark className="w-6 h-6" />
             </div>
-
-            {/* CONDITION 1: USER HAS NOT CLICKED "ASK AI FOR STATE SCHEMES" YET */}
-            {!stateAiQueried ? (
-              <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-stone-50 border-2 border-dashed border-amber-300/90 rounded-2xl p-8 text-center space-y-4 shadow-2xs">
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center shadow-xs">
-                  <Landmark className="w-7 h-7" />
-                </div>
-                <div className="max-w-lg mx-auto space-y-1.5">
-                  <h3 className="text-base font-bold text-stone-900">
-                    Discover {userState} State Schemes & Scholarships
-                  </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed">
-                    Click below to discover schemes and scholarships enacted by the <strong>Government of {userState}</strong> matching your verified profile credentials ({currentUser?.name}, {currentUser?.occupation || 'Citizen'}).
-                  </p>
-                </div>
-                <div className="pt-2">
-                  <button
-                    onClick={handleAskStateAi}
-                    disabled={isAskingStateSchemes}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 hover:shadow-lg"
-                  >
-                    <Bot className={`w-4 h-4 ${isAskingStateSchemes ? 'animate-spin' : ''}`} />
-                    <Sparkles className="w-4 h-4 text-amber-200" />
-                    <span>{isAskingStateSchemes ? `Scanning Government of ${userState}...` : `✨ Discover ${userState} State Schemes`}</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-          /* CONDITION 2: SPECIAL CHATBOT BOX FOR STATE SCHEMES */
-          <div className="bg-gradient-to-b from-amber-50/80 to-white rounded-2xl border-2 border-amber-300 p-5 sm:p-6 space-y-5 shadow-sm">
-            {/* Chatbot Header */}
-            <div className="p-4 bg-white rounded-xl border border-amber-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-700 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-amber-950">
-                      Yojana Mitra AI Evaluation: Government of {userState}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase">
-                      Special Chatbot Box
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-600 mt-0.5">
-                    Verified {filteredStateSchemes.length} state-related schemes and scholarships for your profile without leaving anything.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={handleAskStateAi}
-                  disabled={isAskingStateSchemes}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-                  title="Re-ask AI for State Schemes"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isAskingStateSchemes ? 'animate-spin' : ''}`} />
-                  <span>{isAskingStateSchemes ? 'Re-scanning...' : 'Re-ask AI'}</span>
-                </button>
-                <button
-                  onClick={() => openChatbotWithPrompt(`Tell me more about state schemes in ${userState} and step-by-step application guidance for my profile.`)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Discuss in Chatbot</span>
-                </button>
-              </div>
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-sm font-bold text-stone-900">
+                Discover Government of {activeStateName} Schemes
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Tap <strong>Ask AI for {activeStateName} Schemes</strong> to run a live evaluation tailored strictly to your profile details with official portal verification.
+              </p>
             </div>
-
-            {/* AI Reasoning Text if available */}
-            {stateChatbotAnswer && (
-              <div className="p-4 bg-amber-100/50 rounded-xl border border-amber-200/80 text-xs text-stone-800 leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto">
-                <div className="flex items-center gap-1.5 text-amber-900 font-bold mb-1.5 text-[11px] uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                  <span>AI Eligibility Rationale & Guidelines</span>
-                </div>
-                {stateChatbotAnswer.text}
-              </div>
-            )}
-
-            {/* State Schemes Grid inside the Special Chatbot Box */}
-            {filteredStateSchemes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredStateSchemes.map((scheme) => (
-                  <div
-                    key={scheme.id}
-                    className="bg-white rounded-xl border-2 border-amber-200/90 hover:border-amber-400 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
-                  >
-                    <div className="p-5 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
-                            <Landmark className="w-3 h-3 text-amber-700" />
-                            <span>{scheme.state} State</span>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700">
-                            {scheme.category}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200 shrink-0">
-                          AI Referred
-                        </span>
-                      </div>
-
-                      <h4
-                        onClick={() => onSelectScheme(scheme)}
-                        className="text-sm font-bold text-stone-900 group-hover:text-amber-900 transition-colors cursor-pointer line-clamp-2"
-                      >
-                        {scheme.name}
-                      </h4>
-
-                      <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
-                        {scheme.shortDescription}
-                      </p>
-
-                      <div className="p-2.5 bg-amber-50/70 rounded-lg border border-amber-100 space-y-1">
-                        <div className="text-[10px] font-bold text-amber-900 uppercase tracking-wider">
-                          Financial / Welfare Benefit:
-                        </div>
-                        <div className="text-xs font-bold text-stone-900">
-                          {scheme.financialBenefitAmount}
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-stone-500 truncate flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-stone-400 shrink-0" />
-                        <span>{scheme.department}</span>
-                      </div>
-                    </div>
-
-                    <div className="px-5 py-3 bg-stone-50/80 border-t border-amber-100 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => onSelectScheme(scheme)}
-                        className="text-xs font-bold text-amber-900 hover:text-amber-950 flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span>View Scheme Details</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-
-                      {scheme.officialWebsite && (
-                        <a
-                          href={scheme.officialWebsite}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] font-semibold text-stone-600 hover:text-amber-900 flex items-center gap-1 transition-colors"
-                        >
-                          <span>Official Portal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl p-8 text-center text-stone-500 border border-amber-200">
-                <p className="text-xs">No state schemes matched your search query "{searchQuery}".</p>
-              </div>
-            )}
+            <button
+              onClick={handleAskStateAi}
+              disabled={isAskingStateSchemes}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isAskingStateSchemes ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+              <span>{isAskingStateSchemes ? `Evaluating ${activeStateName}...` : `Ask AI for ${activeStateName} Schemes`}</span>
+            </button>
           </div>
+        ) : isAskingStateSchemes ? (
+          <div className="bg-amber-50/50 rounded-2xl border border-amber-200 p-8 text-center space-y-3">
+            <Loader2 className="w-7 h-7 animate-spin text-amber-700 mx-auto" />
+            <p className="text-xs font-bold text-amber-950">
+              Live chatbot is evaluating Government of {activeStateName} schemes for your details...
+            </p>
+          </div>
+        ) : (
+          <AiTextResponsePanel
+            title={`Government of ${activeStateName} Schemes & Scholarships`}
+            subtitle={`AI Verified active state welfare initiatives matching your personal details`}
+            response={stateChatbotAnswer?.text || stateAiReply || `No specific state schemes found for ${activeStateName} matching your current profile.`}
+            timestamp={stateChatbotAnswer?.timestamp}
+            theme="amber"
+            stateName={activeStateName}
+            relevantSchemes={stateAiSchemes.length > 0 ? stateAiSchemes : eligibleStatePool}
+            discussPrompt={`Tell me more about active state welfare schemes and scholarships in ${activeStateName} for my profile.`}
+            onClear={() => {
+              setStateAiQueried(false);
+              setStateAiReply('');
+              setStateAiSchemes([]);
+            }}
+          />
         )}
+
       </section>
 
       {/* ==================================================== */}
-      {/* SECTION 2 (BOTTOM): CENTRAL GOVERNMENT SCHEMES & SCHOLARSHIPS */}
+      {/* SECTION 2: CENTRAL SCHEMES                          */}
       {/* ==================================================== */}
-      <section className="space-y-4 pt-4 border-t-2 border-stone-200">
+      <section className="space-y-4 pt-2">
+        
+        {/* Central Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-emerald-200">
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-900">
                 <Building className="w-5 h-5" />
               </span>
               <h2 className="text-xl font-bold text-stone-900 tracking-tight">
-                Central Government Schemes & Scholarships
+                Central Government Schemes
               </h2>
             </div>
-            <p className="text-stone-600 text-xs">
-              National flagship welfare programs, central sector scholarships, and Ministry DBT initiatives across India.
+            <p className="text-xs text-stone-600">
+              National flagship welfare programs, Central Sector scholarships, and DBT initiatives.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-full text-xs font-bold">
-              🇮🇳 Pan-India Central
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold">
+              🇮🇳 Pan-India
             </span>
+
+            {/* Ask AI for Central Schemes Button */}
+            <button
+              onClick={handleAskCentralAi}
+              disabled={isAskingCentralSchemes}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
+              title="Click to ask AI for verified Central government schemes"
+            >
+              {isAskingCentralSchemes ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+              <span>{isAskingCentralSchemes ? 'Evaluating Central...' : 'Ask AI for Central Schemes'}</span>
+            </button>
           </div>
         </div>
 
-        {/* CONDITION 1: USER HAS NOT CLICKED "ASK AI FOR CENTRAL SCHEMES" YET */}
-        {!centralAiQueried ? (
-          <div className="bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-stone-50 border-2 border-dashed border-emerald-300/90 rounded-2xl p-8 text-center space-y-4 shadow-2xs">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center shadow-xs">
-              <Building className="w-7 h-7" />
+        {/* CONDITION: ONLY SHOW CENTRAL RESPONSE IF USER TAPS ASK AI OR HAS ANSWER */}
+        {!centralAiQueried && !centralChatbotAnswer ? (
+          <div className="bg-emerald-50/40 border border-dashed border-emerald-300 rounded-2xl p-8 sm:p-10 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-900 mx-auto flex items-center justify-center shadow-2xs">
+              <Building className="w-6 h-6" />
             </div>
-            <div className="max-w-lg mx-auto space-y-1.5">
-              <h3 className="text-base font-bold text-stone-900">
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-sm font-bold text-stone-900">
                 Discover Pan-India Central Government Schemes
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Click below to have <strong>Yojana Mitra AI Chatbot</strong> evaluate all Pan-India Central Government schemes, national merit scholarships, and Ministry DBT initiatives that you are eligible for as a <strong>{currentUser?.occupation || 'citizen'}</strong>.
+                Tap <strong>Ask AI for Central Schemes</strong> to run a live evaluation for national welfare and scholarship programs tailored strictly to your profile details with official portal verification.
               </p>
             </div>
-            <div className="pt-2">
-              <button
-                onClick={handleAskCentralAi}
-                disabled={isAskingCentralSchemes}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50 hover:shadow-lg"
-              >
-                <Bot className={`w-4 h-4 ${isAskingCentralSchemes ? 'animate-spin' : ''}`} />
-                <Sparkles className="w-4 h-4 text-emerald-300" />
-                <span>{isAskingCentralSchemes ? 'Evaluating Central Schemes...' : '🇮🇳 Ask AI for Central Schemes'}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleAskCentralAi}
+              disabled={isAskingCentralSchemes}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isAskingCentralSchemes ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+              <span>{isAskingCentralSchemes ? 'Evaluating Central...' : 'Ask AI for Central Schemes'}</span>
+            </button>
+          </div>
+        ) : isAskingCentralSchemes ? (
+          <div className="bg-emerald-50/50 rounded-2xl border border-emerald-200 p-8 text-center space-y-3">
+            <Loader2 className="w-7 h-7 animate-spin text-emerald-800 mx-auto" />
+            <p className="text-xs font-bold text-emerald-950">
+              Live chatbot is evaluating Pan-India Central Government schemes for your details...
+            </p>
           </div>
         ) : (
-          /* CONDITION 2: SPECIAL CHATBOT BOX FOR CENTRAL SCHEMES */
-          <div className="bg-gradient-to-b from-emerald-50/80 to-white rounded-2xl border-2 border-emerald-300 p-5 sm:p-6 space-y-5 shadow-sm">
-            {/* Chatbot Header */}
-            <div className="p-4 bg-white rounded-xl border border-emerald-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-800 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-emerald-950">
-                      Yojana Mitra AI Evaluation: Central Government Schemes
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
-                      Special Chatbot Box
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-600 mt-0.5">
-                    Found {filteredCentralSchemes.length} verified Central Government schemes that you are fully eligible for.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={handleAskCentralAi}
-                  disabled={isAskingCentralSchemes}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-                  title="Re-ask AI for Central Schemes"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isAskingCentralSchemes ? 'animate-spin' : ''}`} />
-                  <span>{isAskingCentralSchemes ? 'Re-evaluating...' : 'Re-ask AI'}</span>
-                </button>
-                <button
-                  onClick={() => openChatbotWithPrompt(`Tell me more about Central Government schemes that I am eligible for and documents checklist.`)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Discuss in Chatbot</span>
-                </button>
-              </div>
-            </div>
-
-            {/* AI Reasoning Text if available */}
-            {centralChatbotAnswer && (
-              <div className="p-4 bg-emerald-100/50 rounded-xl border border-emerald-200/80 text-xs text-stone-800 leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto">
-                <div className="flex items-center gap-1.5 text-emerald-900 font-bold mb-1.5 text-[11px] uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>AI Eligibility Rationale & Guidelines</span>
-                </div>
-                {centralChatbotAnswer.text}
-              </div>
-            )}
-
-            {/* Central Schemes Grid inside the Special Chatbot Box */}
-            {filteredCentralSchemes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredCentralSchemes.map((scheme) => (
-                  <div
-                    key={scheme.id}
-                    className="bg-white rounded-xl border-2 border-emerald-200/90 hover:border-emerald-400 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
-                  >
-                    <div className="p-5 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 flex items-center gap-1">
-                            <Building className="w-3 h-3 text-emerald-700" />
-                            <span>Central Govt</span>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700">
-                            {scheme.category}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200 shrink-0">
-                          AI Referred
-                        </span>
-                      </div>
-
-                      <h4
-                        onClick={() => onSelectScheme(scheme)}
-                        className="text-sm font-bold text-stone-900 group-hover:text-emerald-900 transition-colors cursor-pointer line-clamp-2"
-                      >
-                        {scheme.name}
-                      </h4>
-
-                      <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
-                        {scheme.shortDescription}
-                      </p>
-
-                      <div className="p-2.5 bg-emerald-50/70 rounded-lg border border-emerald-100 space-y-1">
-                        <div className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">
-                          Financial / Welfare Benefit:
-                        </div>
-                        <div className="text-xs font-bold text-stone-900">
-                          {scheme.financialBenefitAmount}
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-stone-500 truncate flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-stone-400 shrink-0" />
-                        <span>{scheme.department}</span>
-                      </div>
-                    </div>
-
-                    <div className="px-5 py-3 bg-stone-50/80 border-t border-emerald-100 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => onSelectScheme(scheme)}
-                        className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span>View Scheme Details</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-
-                      {scheme.officialWebsite && (
-                        <a
-                          href={scheme.officialWebsite}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] font-semibold text-stone-600 hover:text-emerald-800 flex items-center gap-1 transition-colors"
-                        >
-                          <span>Official Portal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl p-8 text-center text-stone-500 border border-emerald-200">
-                <p className="text-xs">No central schemes matched your search query "{searchQuery}".</p>
-              </div>
-            )}
-          </div>
+          <AiTextResponsePanel
+            title="Pan-India Central Government Schemes & Scholarships"
+            subtitle="AI Verified flagship central welfare programs and scholarships matching your profile credentials"
+            response={centralChatbotAnswer?.text || centralAiReply || 'No central schemes currently match your specific profile criteria in the chatbot evaluation.'}
+            timestamp={centralChatbotAnswer?.timestamp}
+            theme="emerald"
+            relevantSchemes={centralAiSchemes.length > 0 ? centralAiSchemes : eligibleCentralPool}
+            discussPrompt="Tell me more about Central Government schemes and national scholarships I qualify for."
+            onClear={() => {
+              setCentralAiQueried(false);
+              setCentralAiReply('');
+              setCentralAiSchemes([]);
+            }}
+          />
         )}
-      </section>
-    </>
-  ) : searchQuery.trim() ? (
-    /* If guest user actively searches in search bar */
-    <section className="space-y-4 pt-2">
-      <div className="pb-3 border-b-2 border-stone-200">
-        <h2 className="text-xl font-bold text-stone-900 tracking-tight">
-          Search Results for "{searchQuery}"
-        </h2>
-        <p className="text-stone-600 text-xs">
-          Found {guestFilteredSchemes.length} matching government schemes & scholarships. Log in for personalized eligibility evaluation.
-        </p>
-      </div>
 
-      {guestFilteredSchemes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {guestFilteredSchemes.map((scheme) => (
-            <SchemeCard
-              key={scheme.id}
-              scheme={scheme}
-              onViewDetails={onSelectScheme}
-              onSelect={onSelectScheme}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl p-8 text-center text-stone-500 border border-stone-200">
-          <p className="text-xs">No schemes matched "{searchQuery}".</p>
-        </div>
-      )}
-    </section>
-  ) : null}
+      </section>
 
     </div>
   );
