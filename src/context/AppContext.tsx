@@ -19,6 +19,7 @@ import {
 import { 
   db, 
   auth, 
+  GoogleAuthProvider,
   googleProvider, 
   createGoogleProviderWithAccountSelect,
   signInWithPopup, 
@@ -80,6 +81,7 @@ interface AppContextType {
   deviceAccounts: DeviceAccount[];
   removeDeviceAccount: (idOrEmail: string) => void;
   selectDeviceAccount: (account: DeviceAccount) => Promise<void>;
+  loginDirectlyWithAccount: (email: string, name?: string, stateChoice?: string) => Promise<void>;
 
   // Actions
   rescanSchemesWithAI: () => Promise<void>;
@@ -288,54 +290,45 @@ const INITIAL_APPLIED: AppliedSchemeRecord[] = [
   }
 ];
 
-const INITIAL_DEVICE_ACCOUNTS: DeviceAccount[] = [
-  {
-    id: 'user-student-1',
-    email: 'shivaswarup2007@gmail.com',
-    name: 'Shiva Swarup',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    provider: 'google',
-    lastUsed: '2026-09-08T10:00:00Z',
-    state: 'Telangana'
-  },
-  {
-    id: 'user-farmer-2',
-    email: 'ramesh.patil@example.com',
-    name: 'Ramesh Patil',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    provider: 'password',
-    lastUsed: '2026-09-07T14:30:00Z',
-    state: 'Maharashtra'
-  },
-  {
-    id: 'user-business-3',
-    email: 'priya.sharma@example.com',
-    name: 'Priya Sharma',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    provider: 'google',
-    lastUsed: '2026-09-06T09:15:00Z',
-    state: 'Delhi'
-  }
-];
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [deviceAccounts, setDeviceAccounts] = useState<DeviceAccount[]>(() => {
     const saved = localStorage.getItem('ym_device_accounts');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          // Keep only real accounts; filter out any leftover mock example accounts
+          const cleanAccounts = parsed.filter((a: any) => 
+            a && 
+            typeof a.email === 'string' && 
+            !a.email.includes('example.com') && 
+            a.id !== 'user-farmer-2' && 
+            a.id !== 'user-business-3' &&
+            a.id !== 'user-student-1'
+          );
+          return cleanAccounts;
         }
       } catch (e) {}
     }
-    return INITIAL_DEVICE_ACCOUNTS;
+    return [];
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('ym_current_user');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved);
+        // Exclude mock example accounts
+        if (
+          parsed && 
+          parsed.email && 
+          !parsed.email.includes('example.com') && 
+          parsed.id !== 'user-farmer-2' && 
+          parsed.id !== 'user-business-3'
+        ) {
+          return parsed;
+        }
+      } catch (e) {}
     }
     return null;
   });
@@ -449,12 +442,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    const demoKey = Object.keys(DEMO_PROFILES).find(k => DEMO_PROFILES[k].email.toLowerCase() === account.email.toLowerCase());
-    if (demoKey) {
-      loadDemoProfile(demoKey as any);
-      setIsAuthModalOpen(false);
-      return;
-    }
+    try {
+      const snap = await getDoc(doc(db, 'users', account.id));
+      if (snap.exists()) {
+        setCurrentUser(snap.data() as UserProfile);
+        setIsAuthModalOpen(false);
+        return;
+      }
+    } catch (e) {}
 
     const profile: UserProfile = {
       id: account.id,
@@ -486,6 +481,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setCurrentUser(profile);
     setIsAuthModalOpen(false);
+  };
+
+  const loginDirectlyWithAccount = async (email: string, name?: string, stateChoice?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name?.trim() || cleanEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const uid = `citizen-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+    let citizenProfile: UserProfile;
+    try {
+      const docRef = doc(db, 'users', uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        citizenProfile = snap.data() as UserProfile;
+      } else {
+        citizenProfile = {
+          id: uid,
+          email: cleanEmail,
+          name: cleanName,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail.split('@')[0]}`,
+          age: 21,
+          gender: 'male',
+          state: stateChoice || 'Telangana',
+          district: 'Hyderabad',
+          areaType: 'Urban',
+          maritalStatus: 'Single',
+          highestEducation: 'Undergraduate (UG)',
+          currentEducationStatus: 'Pursuing',
+          isStudent: true,
+          category: 'General',
+          isDisability: false,
+          isMinority: false,
+          annualFamilyIncome: 250000,
+          employmentStatus: 'Student',
+          occupation: 'Student',
+          isFarmer: false,
+          isBusinessOwner: false,
+          isWomanEntrepreneur: false,
+          isSeniorCitizen: false,
+          isBPLOrEWS: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await setDoc(docRef, sanitizeForFirestore(citizenProfile));
+      }
+    } catch (e) {
+      citizenProfile = {
+        id: uid,
+        email: cleanEmail,
+        name: cleanName,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail.split('@')[0]}`,
+        age: 21,
+        gender: 'male',
+        state: stateChoice || 'Telangana',
+        district: 'Hyderabad',
+        areaType: 'Urban',
+        maritalStatus: 'Single',
+        highestEducation: 'Undergraduate (UG)',
+        currentEducationStatus: 'Pursuing',
+        isStudent: true,
+        category: 'General',
+        isDisability: false,
+        isMinority: false,
+        annualFamilyIncome: 250000,
+        employmentStatus: 'Student',
+        occupation: 'Student',
+        isFarmer: false,
+        isBusinessOwner: false,
+        isWomanEntrepreneur: false,
+        isSeniorCitizen: false,
+        isBPLOrEWS: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    recordDeviceAccount({
+      id: citizenProfile.id,
+      email: citizenProfile.email,
+      name: citizenProfile.name,
+      avatar: citizenProfile.avatar,
+      provider: 'google',
+      state: citizenProfile.state
+    });
+
+    setCurrentUser(citizenProfile);
+    localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
+    setIsAuthModalOpen(false);
+    setIsOnboarding(false);
   };
 
   // Listen to Firebase Auth state
@@ -632,114 +715,137 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const unreadNotificationCount = notifications.filter(n => !n.read).length;
 
   const loginWithGoogle = async (preferredEmail?: string, preferredName?: string) => {
-    const provider = createGoogleProviderWithAccountSelect();
-    if (preferredEmail && preferredEmail.includes('@')) {
-      provider.setCustomParameters({
-        prompt: 'select_account',
-        login_hint: preferredEmail.trim()
-      });
-    } else {
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
+    // 1. Clear any active Firebase user session so Google prompt='select_account' can freely show account list
+    if (auth.currentUser) {
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.warn('Sign out before Google login notice:', e);
+      }
     }
 
-    const targetEmail = (preferredEmail?.trim() || 'shivaswarup2007@gmail.com').toLowerCase();
-    const targetName = preferredName?.trim() || (targetEmail.includes('shivaswarup') ? 'Shiva Swarup' : targetEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    const provider = new GoogleAuthProvider();
+    const customParams: Record<string, string> = {
+      prompt: 'select_account'
+    };
+    if (preferredEmail && preferredEmail.includes('@')) {
+      customParams.login_hint = preferredEmail.trim();
+    }
+    provider.setCustomParameters(customParams);
 
     try {
-      // 1. Attempt standard Firebase Google popup sign-in with account chooser prompt
       const result = await signInWithPopup(auth, provider);
       if (result?.user) {
         const u = result.user;
-        const loggedEmail = u.email || targetEmail;
-        const loggedName = u.displayName || targetName;
+        const loggedEmail = (u.email || preferredEmail || '').toLowerCase();
+        const loggedName = u.displayName || preferredName || loggedEmail.split('@')[0] || 'Citizen';
+        const loggedPhoto = u.photoURL || undefined;
+
+        // Fetch or initialize Firestore user profile
+        let citizenProfile: UserProfile;
+        try {
+          const docRef = doc(db, 'users', u.uid);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            citizenProfile = snap.data() as UserProfile;
+          } else {
+            citizenProfile = {
+              id: u.uid,
+              email: loggedEmail,
+              name: loggedName,
+              avatar: loggedPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${loggedEmail.split('@')[0]}`,
+              age: 21,
+              gender: 'male',
+              state: 'Telangana',
+              district: 'Hyderabad',
+              areaType: 'Urban',
+              maritalStatus: 'Single',
+              highestEducation: 'Undergraduate (UG)',
+              currentEducationStatus: 'Pursuing',
+              isStudent: true,
+              category: 'General',
+              isDisability: false,
+              isMinority: false,
+              annualFamilyIncome: 250000,
+              employmentStatus: 'Student',
+              occupation: 'Student',
+              isFarmer: false,
+              isBusinessOwner: false,
+              isWomanEntrepreneur: false,
+              isSeniorCitizen: false,
+              isBPLOrEWS: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            await setDoc(docRef, sanitizeForFirestore(citizenProfile));
+          }
+        } catch (e) {
+          citizenProfile = {
+            id: u.uid,
+            email: loggedEmail,
+            name: loggedName,
+            avatar: loggedPhoto || `https://api.dicebear.com/7.x/bottts/svg?seed=${loggedEmail.split('@')[0]}`,
+            age: 21,
+            gender: 'male',
+            state: 'Telangana',
+            district: 'Hyderabad',
+            areaType: 'Urban',
+            maritalStatus: 'Single',
+            highestEducation: 'Undergraduate (UG)',
+            currentEducationStatus: 'Pursuing',
+            isStudent: true,
+            category: 'General',
+            isDisability: false,
+            isMinority: false,
+            annualFamilyIncome: 250000,
+            employmentStatus: 'Student',
+            occupation: 'Student',
+            isFarmer: false,
+            isBusinessOwner: false,
+            isWomanEntrepreneur: false,
+            isSeniorCitizen: false,
+            isBPLOrEWS: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        }
 
         recordDeviceAccount({
           id: u.uid,
           email: loggedEmail,
           name: loggedName,
-          avatar: u.photoURL || undefined,
+          avatar: loggedPhoto,
           provider: 'google',
-          state: 'Telangana'
+          state: citizenProfile.state
         });
 
+        setCurrentUser(citizenProfile);
+        localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
         setIsAuthModalOpen(false);
         setIsOnboarding(false);
         return;
       }
     } catch (err: any) {
-      console.warn('Google popup notification (domain authorization / iframe popup restriction):', err?.code || err);
+      console.warn('Google sign-in attempt notice:', err?.code, err?.message);
 
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         throw new Error('Google sign-in was cancelled. Please choose an account to continue.');
       }
 
-      // 2. Verified Google Authentication session for preview / container environments
-      const uid = auth.currentUser?.uid || `google-user-${targetEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '')}`;
-
-      const citizenProfile: UserProfile = {
-        id: uid,
-        email: targetEmail,
-        name: targetName,
-        avatar: auth.currentUser?.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${targetEmail.split('@')[0]}`,
-        age: 19,
-        gender: 'male',
-        dateOfBirth: '2007-04-12',
-        state: 'Telangana',
-        district: 'Hyderabad',
-        areaType: 'Urban',
-        maritalStatus: 'Single',
-        highestEducation: '12th Pass (Intermediate)',
-        currentEducationStatus: 'Pursuing',
-        courseStream: 'B.Tech Computer Science & Engineering',
-        institutionName: 'JNTU Hyderabad',
-        isStudent: true,
-        category: 'OBC',
-        isDisability: false,
-        isMinority: false,
-        annualFamilyIncome: 220000,
-        employmentStatus: 'Student',
-        occupation: 'Engineering Undergraduate Student',
-        isFarmer: false,
-        isBusinessOwner: false,
-        isWomanEntrepreneur: false,
-        isSeniorCitizen: false,
-        isBPLOrEWS: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      recordDeviceAccount({
-        id: citizenProfile.id,
-        email: citizenProfile.email,
-        name: citizenProfile.name,
-        avatar: citizenProfile.avatar,
-        provider: 'google',
-        state: citizenProfile.state
-      });
-
-      // Set user session in app state and local storage immediately
-      setCurrentUser(citizenProfile);
-      localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
-
-      // If Firebase Auth session exists, sync document to Firestore
-      if (auth.currentUser) {
-        try {
-          const userDocRef = doc(db, 'users', auth.currentUser.uid);
-          await setDoc(userDocRef, sanitizeForFirestore({
-            ...citizenProfile,
-            id: auth.currentUser.uid,
-            email: auth.currentUser.email || targetEmail,
-            name: auth.currentUser.displayName || targetName
-          }), { merge: true });
-        } catch (syncErr) {
-          console.warn('Firestore profile sync note:', syncErr);
-        }
+      if (err?.code === 'auth/popup-blocked') {
+        throw new Error('Google sign-in popup was blocked by your browser. Please allow popups for this site and retry.');
       }
 
-      setIsAuthModalOpen(false);
-      setIsOnboarding(false);
+      if (
+        err?.code === 'auth/unauthorized-domain' ||
+        err?.message?.includes('unauthorized-domain') ||
+        err?.message?.includes('authorized domain')
+      ) {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'your Vercel domain';
+        throw new Error(`DOMAIN_NOT_AUTHORIZED:${hostname}`);
+      }
+
+      throw new Error(err?.message || 'Google sign-in could not be completed.');
     }
   };
 
@@ -1458,6 +1564,7 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         deviceAccounts,
         removeDeviceAccount,
         selectDeviceAccount,
+        loginDirectlyWithAccount,
 
         // Actions
         rescanSchemesWithAI,

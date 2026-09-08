@@ -26,8 +26,7 @@ export const ProfileView: React.FC = () => {
     updateProfile, 
     recommendedSchemes, 
     appliedSchemes, 
-    setActiveTab,
-    loadDemoProfile 
+    setActiveTab 
   } = useApp();
 
   const [isEditing, setIsEditing] = useState(false);

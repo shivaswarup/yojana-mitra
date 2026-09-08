@@ -13,7 +13,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const AuthView: React.FC = () => {
-  const { login, signup, loginWithGoogle, loadDemoProfile } = useApp();
+  const { login, signup, loginWithGoogle } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -229,47 +229,6 @@ export const AuthView: React.FC = () => {
                 ? 'Already have an account? Sign in' 
                 : "Don't have an account? Create one"}
             </button>
-          </div>
-
-          {/* Instant Demo Profile Access for Quick Evaluation */}
-          <div className="pt-3 border-t border-stone-100 space-y-2">
-            <div className="text-center text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
-              Quick 1-Click Evaluation Personas:
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => loadDemoProfile('student')}
-                className="p-2 text-left bg-stone-50 hover:bg-emerald-50 hover:border-emerald-300 border border-stone-200 rounded-lg transition-all"
-              >
-                <div className="font-bold text-stone-800">🎓 Student</div>
-                <div className="text-[10px] text-stone-500">Shiva, OBC, Telangana</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => loadDemoProfile('farmer')}
-                className="p-2 text-left bg-stone-50 hover:bg-emerald-50 hover:border-emerald-300 border border-stone-200 rounded-lg transition-all"
-              >
-                <div className="font-bold text-stone-800">🌾 Farmer</div>
-                <div className="text-[10px] text-stone-500">Ramesh, Maharashtra</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => loadDemoProfile('woman_entrepreneur')}
-                className="p-2 text-left bg-stone-50 hover:bg-emerald-50 hover:border-emerald-300 border border-stone-200 rounded-lg transition-all"
-              >
-                <div className="font-bold text-stone-800">💼 Woman Entr.</div>
-                <div className="text-[10px] text-stone-500">Priya, Delhi</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => loadDemoProfile('senior_citizen')}
-                className="p-2 text-left bg-stone-50 hover:bg-emerald-50 hover:border-emerald-300 border border-stone-200 rounded-lg transition-all"
-              >
-                <div className="font-bold text-stone-800">👴 Senior Citizen</div>
-                <div className="text-[10px] text-stone-500">Kailash, UP</div>
-              </button>
-            </div>
           </div>
 
         </div>
