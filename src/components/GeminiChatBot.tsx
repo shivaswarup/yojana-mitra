@@ -16,7 +16,8 @@ import {
   Clock,
   FileCheck,
   GripVertical,
-  Move
+  Move,
+  Languages
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SCHEMES_DATABASE } from '../data/schemes';
@@ -31,11 +32,21 @@ interface Message {
   matchedSchemes?: Scheme[];
 }
 
-const QUICK_PROMPTS = [
+const QUICK_PROMPTS_EN = [
+  'What Central Government schemes am I eligible for?',
   'What scholarships match my profile?',
   'What active government schemes in my state am I eligible for?',
   'What documents are needed for my application?',
-  'How do I apply for state welfare schemes on the official portal?'
+  'తెలుగులో వివరించండి (Respond in Telugu)'
+];
+
+const QUICK_PROMPTS_TE = [
+  'నేను అర్హులైన కేంద్ర ప్రభుత్వ పథకాలు ఏమిటి?',
+  'నా ప్రొఫైల్‌కు సరిపోయే స్కాలర్‌షిప్‌లు ఏమిటి?',
+  'నా రాష్ట్రంలో నేను అర్హులైన ప్రభుత్వ పథకాలు ఏమిటి?',
+  'దరఖాస్తు చేసుకోవడానికి ఏ డాక్యుమెంట్లు కావాలి?',
+  'అధికారిక పోర్టల్‌లో ఎలా దరఖాస్తు చేసుకోవాలి?',
+  'Explain in English (ఆంగ్లంలో సమాధానం)'
 ];
 
 function extractMatchingSchemes(text: string, profile?: UserProfile | null): Scheme[] {
@@ -50,33 +61,33 @@ function extractMatchingSchemes(text: string, profile?: UserProfile | null): Sch
       normalized.includes(nameLower) || 
       (scheme.shortDescription && normalized.includes(scheme.shortDescription.toLowerCase().slice(0, 30)));
 
-    // Check specific known scheme acronyms & keywords
+    // Check specific known scheme acronyms & keywords (English & Telugu)
     let isAliasMatch = false;
-    if (scheme.id === 'pm-yasasvi-scholarship' && (normalized.includes('yasasvi') || normalized.includes('pm-yasasvi') || normalized.includes('pm yasasvi'))) {
+    if (scheme.id === 'pm-yasasvi-scholarship' && (normalized.includes('yasasvi') || normalized.includes('pm-yasasvi') || normalized.includes('pm yasasvi') || normalized.includes('యశస్వి'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'central-sector-scheme-university-college' && (normalized.includes('central sector') || normalized.includes('csss') || normalized.includes('merit-cum-means'))) {
+    } else if (scheme.id === 'central-sector-scheme-university-college' && (normalized.includes('central sector') || normalized.includes('csss') || normalized.includes('merit-cum-means') || normalized.includes('ఉపకార వేతనం'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'pm-kisan-samman-nidhi' && (normalized.includes('pm-kisan') || normalized.includes('pm kisan') || normalized.includes('kisan samman'))) {
+    } else if (scheme.id === 'pm-kisan-samman-nidhi' && (normalized.includes('pm-kisan') || normalized.includes('pm kisan') || normalized.includes('kisan samman') || normalized.includes('కిసాన్') || normalized.includes('రైతు'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'ayushman-bharat-pmjay' && (normalized.includes('ayushman') || normalized.includes('pm-jay') || normalized.includes('pmjay') || normalized.includes('golden card'))) {
+    } else if (scheme.id === 'ayushman-bharat-pmjay' && (normalized.includes('ayushman') || normalized.includes('pm-jay') || normalized.includes('pmjay') || normalized.includes('golden card') || normalized.includes('ఆయుష్మాన్') || normalized.includes('ఆరోగ్యశ్రీ'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'pradhan-mantri-mudra-yojana' && (normalized.includes('mudra') || normalized.includes('shishu loan') || normalized.includes('kishore loan'))) {
+    } else if (scheme.id === 'pradhan-mantri-mudra-yojana' && (normalized.includes('mudra') || normalized.includes('shishu loan') || normalized.includes('kishore loan') || normalized.includes('ముద్ర'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'aicte-pragati-scholarship' && (normalized.includes('pragati') || normalized.includes('aicte pragati'))) {
+    } else if (scheme.id === 'aicte-pragati-scholarship' && (normalized.includes('pragati') || normalized.includes('aicte pragati') || normalized.includes('ప్రగతి'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'nmmss-national-means-merit' && (normalized.includes('nmmss') || normalized.includes('means-cum-merit') || normalized.includes('means cum merit'))) {
+    } else if (scheme.id === 'nmmss-national-means-merit' && (normalized.includes('nmmss') || normalized.includes('means-cum-merit') || normalized.includes('means cum merit') || normalized.includes('మీన్స్'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'pm-awas-yojana-gramin' && (normalized.includes('pmay') || normalized.includes('pm awas') || normalized.includes('awas yojana'))) {
+    } else if (scheme.id === 'pm-awas-yojana-gramin' && (normalized.includes('pmay') || normalized.includes('pm awas') || normalized.includes('awas yojana') || normalized.includes('ఆవాస్') || normalized.includes('ఇందిరమ్మ') || normalized.includes('గృహ'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'sukanya-samriddhi-yojana' && (normalized.includes('sukanya') || normalized.includes('ssy'))) {
+    } else if (scheme.id === 'sukanya-samriddhi-yojana' && (normalized.includes('sukanya') || normalized.includes('ssy') || normalized.includes('సుకున్య'))) {
       isAliasMatch = true;
     } else if (scheme.id === 'stand-up-india' && (normalized.includes('stand-up india') || normalized.includes('stand up india'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'atal-pension-yojana' && (normalized.includes('atal pension') || normalized.includes('apy'))) {
+    } else if (scheme.id === 'atal-pension-yojana' && (normalized.includes('atal pension') || normalized.includes('apy') || normalized.includes('పెన్షన్') || normalized.includes('ఆసరా'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'pm-svanidhi' && (normalized.includes('svanidhi') || normalized.includes('street vendor'))) {
+    } else if (scheme.id === 'pm-svanidhi' && (normalized.includes('svanidhi') || normalized.includes('street vendor') || normalized.includes('స్వనిధి'))) {
       isAliasMatch = true;
-    } else if (scheme.id === 'national-overseas-scholarship' && (normalized.includes('national overseas') || normalized.includes('overseas scholarship'))) {
+    } else if (scheme.id === 'national-overseas-scholarship' && (normalized.includes('national overseas') || normalized.includes('overseas scholarship') || normalized.includes('విదేశీ విద్యా'))) {
       isAliasMatch = true;
     }
 
@@ -85,7 +96,7 @@ function extractMatchingSchemes(text: string, profile?: UserProfile | null): Sch
       const stateName = scheme.state.toLowerCase();
       const userState = profile?.state?.toLowerCase();
       const mentionsUserOrSchemeState = normalized.includes(stateName) || (userState && normalized.includes(userState) && stateName === userState);
-      const isStateQuery = normalized.includes('state') || normalized.includes('local scheme') || normalized.includes('my state');
+      const isStateQuery = normalized.includes('state') || normalized.includes('local scheme') || normalized.includes('my state') || normalized.includes('రాష్ట్ర');
 
       if (mentionsUserOrSchemeState || isStateQuery) {
         if (
@@ -129,6 +140,7 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
   } = useApp();
   
   const [isMinimized, setIsMinimized] = useState(false);
+  const [chatLanguage, setChatLanguage] = useState<'english' | 'telugu'>('english');
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -138,13 +150,44 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
         id: 'welcome',
         role: 'model',
         text: currentUser 
-          ? `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser.occupation || 'Citizen'}, ${currentUser.maritalStatus || 'Single'}, ${currentUser.category || 'General'}, ${currentUser.state || 'India'}${currentUser.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou can ask me here about required documents, application deadlines, step-by-step registration on official portals, or appeal procedures.`
-          : `Namaste Citizen! 🙏\n\nI am **Yojana Mitra AI**, official Government Scheme & Scholarship assistant. Please **Log In** or **Sign Up** to check your verified eligibility for central & state schemes!`,
+          ? `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser.occupation || 'Citizen'}, ${currentUser.maritalStatus || 'Single'}, ${currentUser.category || 'General'}, ${currentUser.state || 'India'}${currentUser.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou can ask me in English or Telugu (**తెలుగులో చెప్పండి**) about Central schemes, state schemes, scholarships, required documents, or step-by-step registration on official portals.`
+          : `Namaste Citizen! 🙏\n\nI am **Yojana Mitra AI**, your official Government Scheme & Scholarship assistant. You can ask me about Central Government schemes, scholarships, state welfare schemes, requirements, and deadlines in English or Telugu (**తెలుగులో చెప్పండి**). All schemes are presented in structured text format!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        matchedSchemes: allMatches
+        matchedSchemes: []
       }
     ];
   });
+
+  const handleLanguageSwitch = (newLang: 'english' | 'telugu') => {
+    setChatLanguage(newLang);
+    if (messages.length === 1 && messages[0].id.startsWith('welcome')) {
+      if (newLang === 'telugu') {
+        setMessages([
+          {
+            id: 'welcome-telugu',
+            role: 'model',
+            text: currentUser
+              ? `నమస్కారం **${currentUser.name || 'పౌరులారా'}**! 🙏\n\nనేను **యోజనా మిత్ర AI** (Yojana Mitra AI), గూగుల్ జెమిని ఆధారిత మీ అధికారిక ప్రభుత్వ పథకాలు మరియు స్కాలర్‌షిప్‌ల సహాయకుడిని. మీ ప్రొఫైల్ (${currentUser.occupation || 'పౌరులు'}, ${currentUser.state || 'భారతదేశం'}) ఆధారంగా అర్హత గల పథకాల వివరాలు, అవసరమైన ధృవీకరణ పత్రాలు, మరియు అధికారిక దరఖాస్తు విధానం గురించి తెలుగులోనే నన్ను అడగవచ్చు!`
+              : `నమస్కారం పౌరులారా! 🙏\n\nనేను **యోజనా మిత్ర AI**, మీ అధికారిక ప్రభుత్వ పథకాలు మరియు స్కాలర్‌షిప్‌ల సహాయకుడిని. కేంద్ర మరియు రాష్ట్ర ప్రభుత్వ పథకాలు, అర్హతలు, మరియు అధికారిక లింకుల గురించి నన్ను నేరుగా అడగవచ్చు!`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            matchedSchemes: []
+          }
+        ]);
+      } else {
+        setMessages([
+          {
+            id: 'welcome-en',
+            role: 'model',
+            text: currentUser
+              ? `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. You can ask me in English or Telugu about Central schemes, scholarships, required documents, application deadlines, or step-by-step registration on official portals.`
+              : `Namaste Citizen! 🙏\n\nI am **Yojana Mitra AI**, official Government Scheme & Scholarship assistant. Ask me about Central schemes, scholarships, state welfare programs, requirements, and deadlines in structured text format!`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            matchedSchemes: []
+          }
+        ]);
+      }
+    }
+  };
 
   // Keep chatbot welcome message synchronized when profile details change (e.g. marital status, state)
   useEffect(() => {
@@ -156,7 +199,7 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
             {
               id: 'welcome',
               role: 'model',
-              text: `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser.occupation || 'Citizen'}, ${currentUser.maritalStatus || 'Single'}, ${currentUser.category || 'General'}, ${currentUser.state || 'India'}${currentUser.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou do not need to ask for eligible schemes again. You can ask me here about required documents, application deadlines, step-by-step registration on official portals, or appeal procedures.`,
+              text: `Namaste **${currentUser.name || 'Citizen'}**! 🙏\n\nI am **Yojana Mitra AI**, powered by Google Gemini. I have already scanned government schemes strictly according to your profile details (${currentUser.occupation || 'Citizen'}, ${currentUser.maritalStatus || 'Single'}, ${currentUser.category || 'General'}, ${currentUser.state || 'India'}${currentUser.district ? ` - ${currentUser.district}` : ''}) and automatically displayed all **${allMatches.length} eligible schemes** on your **Home Page Recommendations**!\n\nYou can ask me in English or Telugu (**తెలుగులో చెప్పండి**) about required documents, application deadlines, or step-by-step registration on official portals.`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               matchedSchemes: allMatches
             }
@@ -256,11 +299,7 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
       window.removeEventListener('pointerup', handlePointerUp);
 
       if (launcherDragRef.current && !launcherDragRef.current.moved) {
-        if (!currentUser) {
-          openAuthModal('login');
-        } else {
-          setIsChatbotOpen(true);
-        }
+        setIsChatbotOpen(true);
       }
       setIsDraggingLauncher(false);
       launcherDragRef.current = null;
@@ -329,9 +368,22 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
     const textToSend = customText || inputMessage.trim();
     if (!textToSend || loading) return;
 
-    if (!currentUser) {
-      openAuthModal('login');
-      return;
+    // Detect if user asks in Telugu or asks to respond in Telugu
+    const isExplicitTelugu = 
+      /(\btelugu\b|తెలుగు|telugulo|telugu\s*lo)/i.test(textToSend) || 
+      /[\u0C00-\u0C7F]/.test(textToSend);
+    
+    // Detect if user explicitly asks for English
+    const isExplicitEnglish = 
+      /(\benglish\b|ఆంగ్లంలో|english\s*lo|in\s*english)/i.test(textToSend);
+
+    let activeLanguage = chatLanguage;
+    if (isExplicitTelugu && !isExplicitEnglish) {
+      activeLanguage = 'telugu';
+      setChatLanguage('telugu');
+    } else if (isExplicitEnglish) {
+      activeLanguage = 'english';
+      setChatLanguage('english');
     }
 
     const userMsg: Message = {
@@ -348,11 +400,39 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
     try {
       // Build conversation history for context
       const history = messages
-        .filter(m => m.id !== 'welcome')
+        .filter(m => !m.id.startsWith('welcome'))
         .map(m => ({
           role: m.role,
           text: m.text
         }));
+
+      const profileToSend = currentUser || {
+        id: 'guest-citizen',
+        email: 'citizen@yojanamitra.gov.in',
+        name: 'Citizen',
+        age: 21,
+        gender: 'male',
+        state: 'Telangana',
+        district: 'Hyderabad',
+        areaType: 'Urban',
+        maritalStatus: 'Single',
+        highestEducation: 'Undergraduate (UG)',
+        currentEducationStatus: 'Pursuing',
+        isStudent: true,
+        category: 'General',
+        isDisability: false,
+        isMinority: false,
+        annualFamilyIncome: 250000,
+        employmentStatus: 'Student',
+        occupation: 'Student',
+        isFarmer: false,
+        isBusinessOwner: false,
+        isWomanEntrepreneur: false,
+        isSeniorCitizen: false,
+        isBPLOrEWS: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -360,12 +440,13 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
         body: JSON.stringify({
           message: textToSend,
           history,
-          userProfile: currentUser
+          userProfile: profileToSend,
+          language: activeLanguage
         })
       });
 
       const data = await res.json();
-      const replyText = data.reply || 'No response generated from Gemini API.';
+      const replyText = data.reply || (activeLanguage === 'telugu' ? 'సమాధానం రూపొందించడం సాధ్యం కాలేదు. దయచేసి అధికారిక ప్రభుత్వ పోర్టల్‌ను తనిఖీ చేయండి.' : 'No response generated from Gemini API.');
 
       // Extract schemes matched in the reply or query that strictly match the user's profile
       const matched = extractMatchingSchemes(textToSend + ' ' + replyText, currentUser);
@@ -389,13 +470,15 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
 
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
-      console.error('Gemini Chat error:', error);
+      console.warn('Gemini Chat notice:', error);
       setMessages(prev => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'model',
-          text: 'Unable to reach the AI server right now. Please verify your connection or check official government portals directly.',
+          text: activeLanguage === 'telugu'
+            ? 'ప్రస్తుతం AI సర్వర్‌ను చేరుకోవడం సాధ్యపడలేదు. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి లేదా అధికారిక ప్రభుత్వ పోర్టల్స్ పరిశీలించండి.'
+            : 'Unable to reach the AI server right now. Please verify your connection or check official government portals directly.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -427,7 +510,9 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
       {
         id: 'welcome-reset',
         role: 'model',
-        text: `Conversation cleared. Namaste **${currentUser?.name || 'Citizen'}**! How can I assist you with government schemes or scholarships?`,
+        text: chatLanguage === 'telugu'
+          ? `సంభాషణ రీసెట్ చేయబడింది. నమస్కారం **${currentUser?.name || 'పౌరులారా'}**! ప్రభుత్వ పథకాలు లేదా స్కాలర్‌షిప్‌ల గురించి నేను మీకు ఎలా సహాయపడగలను?`
+          : `Conversation cleared. Namaste **${currentUser?.name || 'Citizen'}**! How can I assist you with government schemes or scholarships?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -498,6 +583,35 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
         });
       };
 
+      // Numbered header e.g. "1." or "1. Scheme Name"
+      if (/^\s*\d+\.\s*$/.test(line.trim())) {
+        return (
+          <div key={idx} className="mt-3.5 pt-2 border-t border-stone-200/70 first:border-t-0 first:mt-0 first:pt-0 flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-900 font-extrabold text-[11px] flex items-center justify-center border border-emerald-300 shrink-0">
+              {line.trim().replace('.', '')}
+            </span>
+          </div>
+        );
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        return (
+          <div key={idx} className="font-bold text-stone-950 text-xs mt-3.5 pt-2 border-t border-stone-200/70 first:border-t-0 first:mt-0 first:pt-0">
+            {renderInline(line)}
+          </div>
+        );
+      }
+
+      // Format scheme fields: Scheme Name, Requirements, Why it suits you, Deadline, Official Portal Link
+      const isSchemeTerm = /^(\s*[\*\-]?\s*)(\*\*)?(Scheme Name|Requirements|Why it suits you|Deadline|Official Portal Link|పథకం పేరు|అర్హతలు|మీకు ఎందుకు సరిపోతుంది|గడువు తేదీ|అధికారిక పోర్టల్ లింక్)(\*\*)?:?/i.test(line);
+      if (isSchemeTerm) {
+        return (
+          <div key={idx} className="text-stone-800 text-xs leading-relaxed my-1 pl-2 border-l-2 border-emerald-500 bg-emerald-50/40 py-1 pr-1.5 rounded-r">
+            {renderInline(line)}
+          </div>
+        );
+      }
+
       if (line.startsWith('### ')) {
         return <h4 key={idx} className="font-bold text-stone-900 text-xs mt-2 mb-1">{renderInline(line.replace('### ', ''))}</h4>;
       }
@@ -536,11 +650,7 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
           onPointerDown={handleLauncherPointerDown}
           onClick={() => {
             if (launcherDragRef.current?.moved) return;
-            if (!currentUser) {
-              openAuthModal('login');
-            } else {
-              setIsChatbotOpen(true);
-            }
+            setIsChatbotOpen(true);
           }}
           style={
             launcherPos.x !== null && launcherPos.y !== null
@@ -624,6 +734,31 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
+              {/* Language Selector */}
+              <div className="flex items-center bg-emerald-950/70 p-0.5 rounded-md border border-emerald-600/40 text-[10px] mr-1">
+                <Languages className="w-3 h-3 text-emerald-300 ml-1 mr-0.5" />
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSwitch('english')}
+                  className={`px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer ${
+                    chatLanguage === 'english' ? 'bg-emerald-600 text-white font-bold shadow-2xs' : 'text-emerald-200 hover:text-white'
+                  }`}
+                  title="Respond in English"
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSwitch('telugu')}
+                  className={`px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer ${
+                    chatLanguage === 'telugu' ? 'bg-emerald-600 text-white font-bold shadow-2xs' : 'text-emerald-200 hover:text-white'
+                  }`}
+                  title="తెలుగులో సమాధానం ఇవ్వండి (Respond in Telugu)"
+                >
+                  తెలుగు
+                </button>
+              </div>
+
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="p-1.5 hover:bg-emerald-700/80 rounded-md text-emerald-200 hover:text-white transition-colors cursor-pointer"
@@ -678,37 +813,6 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
                           <div className="space-y-1">{formatText(msg.text)}</div>
                         )}
 
-                        {/* Interactive Scheme Cards inside AI Reply */}
-                        {!isUser && msg.matchedSchemes && msg.matchedSchemes.length > 0 && (
-                          <div className="mt-2.5 pt-2 border-t border-stone-100 space-y-1.5">
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-800">
-                              <Sparkles className="w-3 h-3 text-emerald-600" />
-                              <span>Added to Home Page Recommendations:</span>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              {msg.matchedSchemes.map((scheme) => (
-                                <button
-                                  key={scheme.id}
-                                  onClick={() => handleSchemeClick(scheme)}
-                                  className="w-full text-left p-2 rounded-lg bg-emerald-50/80 hover:bg-emerald-100/80 border border-emerald-200/80 flex items-center justify-between gap-2 transition-colors cursor-pointer group"
-                                >
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-[11px] font-bold text-stone-900 truncate group-hover:text-emerald-900">
-                                      {scheme.name}
-                                    </div>
-                                    <div className="text-[9px] text-emerald-700 font-semibold truncate">
-                                      {scheme.financialBenefitAmount || scheme.category}
-                                    </div>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-emerald-800 bg-white px-2 py-0.5 rounded shadow-2xs border border-emerald-200 shrink-0 flex items-center gap-0.5">
-                                    View Details ↗
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         <div
                           className={`text-[9px] mt-1.5 text-right ${
                             isUser ? 'text-emerald-200' : 'text-stone-400'
@@ -737,7 +841,9 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
                         <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
                         <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce" />
                       </div>
-                      <span className="text-[11px] text-stone-500 font-medium">Consulting official guidelines...</span>
+                      <span className="text-[11px] text-stone-500 font-medium">
+                        {chatLanguage === 'telugu' ? 'అధికారిక ప్రభుత్వ సమాచారాన్ని పరిశీలిస్తున్నాము...' : 'Consulting official guidelines...'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -748,11 +854,14 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
               {/* Quick Prompts Suggestions */}
               {messages.length <= 2 && (
                 <div className="px-3 py-2 bg-stone-100/70 border-t border-stone-200/80">
-                  <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">
-                    Suggested Questions:
+                  <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>{chatLanguage === 'telugu' ? 'సిఫార్సు చేయబడిన ప్రశ్నలు:' : 'Suggested Questions:'}</span>
+                    <span className="text-[9px] text-emerald-700 font-normal">
+                      {chatLanguage === 'telugu' ? 'భాష: తెలుగు' : 'English / తెలుగు'}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {QUICK_PROMPTS.map((prompt, idx) => (
+                    {(chatLanguage === 'telugu' ? QUICK_PROMPTS_TE : QUICK_PROMPTS_EN).map((prompt, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(prompt)}
@@ -773,7 +882,11 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about schemes, scholarships, eligibility..."
+                    placeholder={
+                      chatLanguage === 'telugu' 
+                        ? 'పథకాలు, స్కాలర్‌షిప్‌లు, అర్హతల గురించి తెలుగులో అడగండి...' 
+                        : 'Ask about schemes, scholarships, or say "తెలుగులో చెప్పండి"...'
+                    }
                     className="w-full text-xs pl-3.5 pr-10 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:bg-white focus:outline-hidden focus:border-emerald-600 text-stone-800 placeholder-stone-400"
                     disabled={loading}
                   />
@@ -788,8 +901,12 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
                   </button>
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-stone-400 mt-1.5 px-1">
-                  <span>Grounded in verified portals (.gov.in)</span>
-                  <span>Powered by Gemini</span>
+                  <span>
+                    {chatLanguage === 'telugu' ? 'ధృవీకరించబడిన ప్రభుత్వ పోర్టల్స్ (.gov.in)' : 'Grounded in verified portals (.gov.in)'}
+                  </span>
+                  <span>
+                    {chatLanguage === 'telugu' ? 'జెమిని మద్దతుతో' : 'Powered by Gemini'}
+                  </span>
                 </div>
               </div>
             </>

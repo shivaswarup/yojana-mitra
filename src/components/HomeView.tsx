@@ -122,11 +122,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
 
   // Handle Ask AI for State Schemes
   const handleAskStateAi = async () => {
-    if (!currentUser) {
-      openAuthModal('login');
-      return;
-    }
-
     setStateAiQueried(true);
     const result = await askChatbotForStateSchemes(activeStateName);
     if (result && result.reply) {
@@ -146,22 +141,48 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     }
   };
 
-  // Active state schemes to show (EMPTY unless stateAiQueried is true)
+  // Pre-computed verified text response for eligible State schemes using exact numbered format
+  const defaultStateResponse = useMemo(() => {
+    if (eligibleStatePool.length === 0) {
+      return `No active State Government schemes currently found for ${activeStateName} matching your specific profile criteria.`;
+    }
+    return eligibleStatePool.map((scheme, idx) => {
+      const criteriaText = scheme.eligibilityCriteria && scheme.eligibilityCriteria.length > 0 
+        ? scheme.eligibilityCriteria.join(', ')
+        : `Resident of ${activeStateName}, target socio-economic criteria`;
+      const documentsText = scheme.documentsRequired && scheme.documentsRequired.length > 0
+        ? scheme.documentsRequired.join(', ')
+        : 'Aadhaar Card, State Domicile Certificate, Income Certificate, Bank Passbook';
+      const requirements = `${criteriaText}. Documents Required: ${documentsText}`;
+      const suitReason = `Official initiative of Government of ${activeStateName} specifically suited for your domicile, ${effectiveProfile.category || 'General'} category, and annual family income of ₹${effectiveProfile.annualFamilyIncome?.toLocaleString('en-IN') || '2,50,000'}.`;
+      const deadline = scheme.applicationDeadline || 'Check Official Portal';
+      const portalLink = scheme.applicationLink || 'https://myscheme.gov.in';
+
+      return `${idx + 1}.
+**Scheme Name:** ${scheme.name}
+**Requirements:** ${requirements}
+**Why it suits you:** ${suitReason}
+**Deadline:** ${deadline}
+**Official Portal Link:** [Official Portal](${portalLink})`;
+    }).join('\n\n');
+  }, [eligibleStatePool, activeStateName, effectiveProfile]);
+
+  // Active state schemes to show
   const activeStateSchemes = useMemo(() => {
-    if (!stateAiQueried) return [];
-    if (!searchQuery.trim()) return stateAiSchemes;
+    const baseList = stateAiSchemes.length > 0 ? stateAiSchemes : eligibleStatePool;
+    if (!searchQuery.trim()) return baseList;
     const q = searchQuery.toLowerCase().trim();
-    return stateAiSchemes.filter(s =>
+    return baseList.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.shortDescription.toLowerCase().includes(q) ||
       s.category.toLowerCase().includes(q) ||
       s.department.toLowerCase().includes(q) ||
       s.tags.some(t => t.toLowerCase().includes(q))
     );
-  }, [stateAiQueried, stateAiSchemes, searchQuery]);
+  }, [stateAiSchemes, eligibleStatePool, searchQuery]);
 
   // -------------------------------------------------------------------
-  // 2. CENTRAL SCHEMES DATA (ONLY SHOWN WHEN USER TAPS ASK AI)
+  // 2. CENTRAL SCHEMES DATA
   // -------------------------------------------------------------------
   const [centralAiQueried, setCentralAiQueried] = useState<boolean>(false);
   const [centralAiSchemes, setCentralAiSchemes] = useState<Scheme[]>([]);
@@ -180,13 +201,36 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     return deduplicateSchemes(list);
   }, [effectiveProfile]);
 
+  // Pre-computed verified text response for eligible Central schemes using exact numbered format
+  const defaultCentralResponse = useMemo(() => {
+    if (eligibleCentralPool.length === 0) {
+      return 'No active Central Government schemes currently match your specific profile criteria.';
+    }
+    return eligibleCentralPool.map((scheme, idx) => {
+      const criteriaText = scheme.eligibilityCriteria && scheme.eligibilityCriteria.length > 0 
+        ? scheme.eligibilityCriteria.join(', ')
+        : 'Indian Citizen, meets target income and category criteria';
+      const documentsText = scheme.documentsRequired && scheme.documentsRequired.length > 0
+        ? scheme.documentsRequired.join(', ')
+        : 'Aadhaar Card, Income Certificate, Bank Passbook';
+      const requirements = `${criteriaText}. Documents Required: ${documentsText}`;
+      const suitReason = effectiveProfile.isStudent 
+        ? `Directly matches your ${effectiveProfile.highestEducation || 'academic'} enrollment status, ${effectiveProfile.category || 'social'} category, and family income under ₹${effectiveProfile.annualFamilyIncome?.toLocaleString('en-IN') || '2,50,000'}.`
+        : `Verified entitlement for your profile (${effectiveProfile.occupation || 'citizen'}, ${effectiveProfile.category || 'general'} category, family income ₹${effectiveProfile.annualFamilyIncome?.toLocaleString('en-IN') || '2,50,000'}).`;
+      const deadline = scheme.applicationDeadline || 'Check Official Portal';
+      const portalLink = scheme.applicationLink || 'https://scholarships.gov.in';
+
+      return `${idx + 1}.
+**Scheme Name:** ${scheme.name}
+**Requirements:** ${requirements}
+**Why it suits you:** ${suitReason}
+**Deadline:** ${deadline}
+**Official Portal Link:** [Official Portal](${portalLink})`;
+    }).join('\n\n');
+  }, [eligibleCentralPool, effectiveProfile]);
+
   // Handle Ask AI for Central Schemes
   const handleAskCentralAi = async () => {
-    if (!currentUser) {
-      openAuthModal('login');
-      return;
-    }
-
     setCentralAiQueried(true);
     const result = await askChatbotForCentralSchemes();
     if (result && result.reply) {
@@ -206,19 +250,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     }
   };
 
-  // Active central schemes to show (EMPTY unless centralAiQueried is true)
+  // Active central schemes to show
   const activeCentralSchemes = useMemo(() => {
-    if (!centralAiQueried) return [];
-    if (!searchQuery.trim()) return centralAiSchemes;
+    const baseList = centralAiSchemes.length > 0 ? centralAiSchemes : eligibleCentralPool;
+    if (!searchQuery.trim()) return baseList;
     const q = searchQuery.toLowerCase().trim();
-    return centralAiSchemes.filter(s =>
+    return baseList.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.shortDescription.toLowerCase().includes(q) ||
       s.category.toLowerCase().includes(q) ||
       s.department.toLowerCase().includes(q) ||
       s.tags.some(t => t.toLowerCase().includes(q))
     );
-  }, [centralAiQueried, centralAiSchemes, searchQuery]);
+  }, [centralAiSchemes, eligibleCentralPool, searchQuery]);
 
   return (
     <div className="space-y-10 pb-16">
@@ -294,46 +338,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
           </div>
         </div>
 
-        {/* CONDITION: ONLY SHOW SCHEMES IF USER TAPS ASK AI */}
-        {!stateAiQueried && !stateChatbotAnswer ? (
-          <div className="bg-amber-50/40 border border-dashed border-amber-300 rounded-2xl p-8 sm:p-10 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 mx-auto flex items-center justify-center shadow-2xs">
-              <Landmark className="w-6 h-6" />
-            </div>
-            <div className="space-y-1 max-w-md mx-auto">
-              <h3 className="text-sm font-bold text-stone-900">
-                Discover Government of {activeStateName} Schemes
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Tap <strong>Ask AI for {activeStateName} Schemes</strong> to run a live evaluation tailored strictly to your profile details with official portal verification.
-              </p>
-            </div>
-            <button
-              onClick={handleAskStateAi}
-              disabled={isAskingStateSchemes}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isAskingStateSchemes ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Bot className="w-4 h-4" />
-              )}
-              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-              <span>{isAskingStateSchemes ? `Evaluating ${activeStateName}...` : `Ask AI for ${activeStateName} Schemes`}</span>
-            </button>
-          </div>
-        ) : isAskingStateSchemes ? (
+        {/* Immediate display of State Schemes in text format */}
+        {isAskingStateSchemes ? (
           <div className="bg-amber-50/50 rounded-2xl border border-amber-200 p-8 text-center space-y-3">
             <Loader2 className="w-7 h-7 animate-spin text-amber-700 mx-auto" />
             <p className="text-xs font-bold text-amber-950">
-              Live chatbot is evaluating Government of {activeStateName} schemes for your details...
+              Evaluating Government of {activeStateName} schemes for your details...
             </p>
           </div>
         ) : (
           <AiTextResponsePanel
             title={`Government of ${activeStateName} Schemes & Scholarships`}
-            subtitle={`AI Verified active state welfare initiatives matching your personal details`}
-            response={stateChatbotAnswer?.text || stateAiReply || `No specific state schemes found for ${activeStateName} matching your current profile.`}
+            subtitle={`Verified active state welfare initiatives matching your personal details`}
+            response={stateChatbotAnswer?.text || stateAiReply || defaultStateResponse}
             timestamp={stateChatbotAnswer?.timestamp}
             theme="amber"
             stateName={activeStateName}
@@ -393,46 +410,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
           </div>
         </div>
 
-        {/* CONDITION: ONLY SHOW CENTRAL RESPONSE IF USER TAPS ASK AI OR HAS ANSWER */}
-        {!centralAiQueried && !centralChatbotAnswer ? (
-          <div className="bg-emerald-50/40 border border-dashed border-emerald-300 rounded-2xl p-8 sm:p-10 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-900 mx-auto flex items-center justify-center shadow-2xs">
-              <Building className="w-6 h-6" />
-            </div>
-            <div className="space-y-1 max-w-md mx-auto">
-              <h3 className="text-sm font-bold text-stone-900">
-                Discover Pan-India Central Government Schemes
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Tap <strong>Ask AI for Central Schemes</strong> to run a live evaluation for national welfare and scholarship programs tailored strictly to your profile details with official portal verification.
-              </p>
-            </div>
-            <button
-              onClick={handleAskCentralAi}
-              disabled={isAskingCentralSchemes}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isAskingCentralSchemes ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Bot className="w-4 h-4" />
-              )}
-              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-              <span>{isAskingCentralSchemes ? 'Evaluating Central...' : 'Ask AI for Central Schemes'}</span>
-            </button>
-          </div>
-        ) : isAskingCentralSchemes ? (
+        {/* Immediate display of Central Schemes in text format */}
+        {isAskingCentralSchemes ? (
           <div className="bg-emerald-50/50 rounded-2xl border border-emerald-200 p-8 text-center space-y-3">
             <Loader2 className="w-7 h-7 animate-spin text-emerald-800 mx-auto" />
             <p className="text-xs font-bold text-emerald-950">
-              Live chatbot is evaluating Pan-India Central Government schemes for your details...
+              Evaluating Pan-India Central Government schemes for your details...
             </p>
           </div>
         ) : (
           <AiTextResponsePanel
             title="Pan-India Central Government Schemes & Scholarships"
-            subtitle="AI Verified flagship central welfare programs and scholarships matching your profile credentials"
-            response={centralChatbotAnswer?.text || centralAiReply || 'No central schemes currently match your specific profile criteria in the chatbot evaluation.'}
+            subtitle="Verified flagship central welfare programs and scholarships matching your profile credentials"
+            response={centralChatbotAnswer?.text || centralAiReply || defaultCentralResponse}
             timestamp={centralChatbotAnswer?.timestamp}
             theme="emerald"
             relevantSchemes={centralAiSchemes.length > 0 ? centralAiSchemes : eligibleCentralPool}

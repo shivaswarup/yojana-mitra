@@ -684,10 +684,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
+  // Baseline profile for guest user recommendations
+  const guestBaselineProfile: UserProfile = React.useMemo(() => ({
+    id: 'guest-profile',
+    email: 'guest@yojanamitra.gov.in',
+    name: 'Citizen',
+    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=guest',
+    age: 21,
+    gender: 'male',
+    state: 'Telangana',
+    district: 'Hyderabad',
+    areaType: 'Urban',
+    maritalStatus: 'Single',
+    highestEducation: 'Undergraduate (UG)',
+    currentEducationStatus: 'Pursuing',
+    courseStream: 'B.Tech / Degree',
+    isStudent: true,
+    category: 'OBC',
+    isDisability: false,
+    isMinority: false,
+    annualFamilyIncome: 250000,
+    employmentStatus: 'Student',
+    occupation: 'Student',
+    isFarmer: false,
+    isBusinessOwner: false,
+    isWomanEntrepreneur: false,
+    isSeniorCitizen: false,
+    isBPLOrEWS: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z'
+  }), []);
+
   // Compute recommendations dynamically
-  const recommendedSchemes = currentUser
-    ? getRecommendedSchemes(SCHEMES_DATABASE, currentUser)
-    : [];
+  const recommendedSchemes = React.useMemo(() => {
+    return getRecommendedSchemes(SCHEMES_DATABASE, currentUser || guestBaselineProfile);
+  }, [currentUser, guestBaselineProfile]);
 
   // Compute 3-day expiring schemes for current user
   const expiringIn3DaysSchemes = React.useMemo(() => {
@@ -1390,25 +1421,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const askChatbotForStateSchemes = async (stateName?: string): Promise<{ reply: string; foundSchemes: Scheme[] }> => {
-    if (!currentUser) return { reply: '', foundSchemes: [] };
-    const targetState = stateName || currentUser.state || 'Telangana';
+    const profile = currentUser || guestBaselineProfile;
+    const targetState = stateName || profile.state || 'Telangana';
     setIsAskingStateSchemes(true);
 
     const promptMessage = `Identify and verify all active state government schemes, welfare programs, and scholarships specifically enacted by the Government of ${targetState} that I am eligible for.
 My Profile Details:
 - State of Residence: ${targetState}
-- Age: ${currentUser.age} (${currentUser.gender})
-- Marital Status: ${currentUser.maritalStatus || 'Single'}
-- Social Category: ${currentUser.category}
-- Occupation / Status: ${currentUser.isStudent ? 'Full-Time Student' : (currentUser.occupation || currentUser.employmentStatus || 'Citizen')}
-- Annual Family Income: ₹${currentUser.annualFamilyIncome}
-- Highest Education: ${currentUser.highestEducation} (${currentUser.currentEducationStatus})
-- Special Entitlements: Student=${currentUser.isStudent}, Farmer=${currentUser.isFarmer}, Business Owner=${currentUser.isBusinessOwner}, Woman Entrepreneur=${currentUser.isWomanEntrepreneur}
+- Age: ${profile.age} (${profile.gender})
+- Marital Status: ${profile.maritalStatus || 'Single'}
+- Social Category: ${profile.category}
+- Occupation / Status: ${profile.isStudent ? 'Full-Time Student' : (profile.occupation || profile.employmentStatus || 'Citizen')}
+- Annual Family Income: ₹${profile.annualFamilyIncome}
+- Highest Education: ${profile.highestEducation} (${profile.currentEducationStatus})
+- Special Entitlements: Student=${profile.isStudent}, Farmer=${profile.isFarmer}, Business Owner=${profile.isBusinessOwner}, Woman Entrepreneur=${profile.isWomanEntrepreneur}
 
 CRITICAL DIRECTIVES:
 1. Recommend ONLY schemes and scholarships that strictly match my personal details.
-${currentUser.isStudent ? 'I am a student: Do NOT recommend agricultural cultivator subsidies (such as diesel subsidy / crop loans), business enterprise loans, or old-age pensions to me. Focus strictly on state scholarships, tuition fee reimbursement, student academic grants, and skill training.' : ''}
-2. MANDATORY OFFICIAL PORTAL LINK REQUIREMENT:
+${profile.isStudent ? 'I am a student: Do NOT recommend agricultural cultivator subsidies (such as diesel subsidy / crop loans), business enterprise loans, or old-age pensions to me. Focus strictly on state scholarships, tuition fee reimbursement, student academic grants, and skill training.' : ''}
+2. MANDATORY NUMBERED TEXT FORMAT (DO NOT USE CARDS):
+Show all schemes strictly in text format numbered sequentially:
+1.
+Scheme Name: ...
+Requirements: ...
+Why it suits you: ...
+Deadline: ...
+Official Portal Link: ...
+3. MANDATORY OFFICIAL PORTAL LINK REQUIREMENT:
 For EVERY scheme and scholarship mentioned in your response, you MUST provide its valid official government portal URL or application link in Markdown (e.g. [Official Application Portal](https://telanganaepass.cgg.gov.in) or **Official Application Link:** https://...). Restrict all verification strictly to official government portals (.gov.in, .nic.in, .cgg.gov.in, myscheme.gov.in). Never omit the application link for any scheme.`;
 
     try {
@@ -1418,7 +1457,7 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         body: JSON.stringify({
           message: promptMessage,
           history: [],
-          userProfile: currentUser
+          userProfile: profile
         })
       });
 
@@ -1436,12 +1475,12 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         const isThisState = s.state.toLowerCase() === targetState.toLowerCase() || 
           (s.eligibilityRules?.states?.some(st => st.toLowerCase() === targetState.toLowerCase()) ?? false);
         if (!isThisState) return false;
-        const evalRes = evaluateSchemeEligibility(s, currentUser);
+        const evalRes = evaluateSchemeEligibility(s, profile);
         return evalRes.unmetCriteria.length === 0;
       });
 
       // Filter strictly to only those schemes mentioned or identified in the chatbot text response
-      const onlyMatchedSchemes = matchSchemesFromAiResponse(reply, eligibleStateSchemes, currentUser);
+      const onlyMatchedSchemes = matchSchemesFromAiResponse(reply, eligibleStateSchemes, profile);
 
       // Add each matched state scheme to chatbot recommendations
       onlyMatchedSchemes.forEach(scheme => {
@@ -1462,25 +1501,33 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
   };
 
   const askChatbotForCentralSchemes = async (): Promise<{ reply: string; foundSchemes: Scheme[] }> => {
-    if (!currentUser) return { reply: '', foundSchemes: [] };
+    const profile = currentUser || guestBaselineProfile;
     setIsAskingCentralSchemes(true);
 
     const promptMessage = `Identify and verify all active Central Government schemes, national flagship welfare programs, and Central Sector / Centrally Sponsored scholarships that I am eligible for as an Indian citizen.
 My Profile Details:
-- Citizen Name: ${currentUser.name}
-- State of Residence: ${currentUser.state}
-- Age: ${currentUser.age} (${currentUser.gender})
-- Marital Status: ${currentUser.maritalStatus || 'Single'}
-- Social Category: ${currentUser.category}
-- Occupation / Status: ${currentUser.isStudent ? 'Full-Time Student' : (currentUser.occupation || currentUser.employmentStatus || 'Citizen')}
-- Annual Family Income: ₹${currentUser.annualFamilyIncome}
-- Highest Education: ${currentUser.highestEducation} (${currentUser.currentEducationStatus})
-- Special Entitlements: Student=${currentUser.isStudent}, Farmer=${currentUser.isFarmer}, Business Owner=${currentUser.isBusinessOwner}, Woman Entrepreneur=${currentUser.isWomanEntrepreneur}, Senior Citizen=${currentUser.isSeniorCitizen}
+- Citizen Name: ${profile.name}
+- State of Residence: ${profile.state}
+- Age: ${profile.age} (${profile.gender})
+- Marital Status: ${profile.maritalStatus || 'Single'}
+- Social Category: ${profile.category}
+- Occupation / Status: ${profile.isStudent ? 'Full-Time Student' : (profile.occupation || profile.employmentStatus || 'Citizen')}
+- Annual Family Income: ₹${profile.annualFamilyIncome}
+- Highest Education: ${profile.highestEducation} (${profile.currentEducationStatus})
+- Special Entitlements: Student=${profile.isStudent}, Farmer=${profile.isFarmer}, Business Owner=${profile.isBusinessOwner}, Woman Entrepreneur=${profile.isWomanEntrepreneur}, Senior Citizen=${profile.isSeniorCitizen}
 
 CRITICAL DIRECTIVES:
 1. Recommend ONLY Central schemes and scholarships strictly matching my personal details.
-${currentUser.isStudent ? 'I am an active student: Do NOT recommend commercial business loans (such as MUDRA / Stand-Up India), artisan toolkits (such as PM Vishwakarma), street vendor micro-credits (such as PM SVANidhi), pensions (such as APY), or farmer benefits (such as PM-KISAN) to me. Focus strictly on Central scholarships (e.g., Central Sector College Scholarships, PM-YASASVI, Post-Matric Scholarships for SC/ST/OBC, PM Vidyalaxmi higher education loan interest subsidy) and student development.' : ''}
-2. MANDATORY OFFICIAL PORTAL LINK REQUIREMENT:
+${profile.isStudent ? 'I am an active student: Do NOT recommend commercial business loans (such as MUDRA / Stand-Up India), artisan toolkits (such as PM Vishwakarma), street vendor micro-credits (such as PM SVANidhi), pensions (such as APY), or farmer benefits (such as PM-KISAN) to me. Focus strictly on Central scholarships (e.g., Central Sector College Scholarships, PM-YASASVI, Post-Matric Scholarships for SC/ST/OBC, PM Vidyalaxmi higher education loan interest subsidy) and student development.' : ''}
+2. MANDATORY NUMBERED TEXT FORMAT (DO NOT USE CARDS):
+Show all schemes strictly in text format numbered sequentially:
+1.
+Scheme Name: ...
+Requirements: ...
+Why it suits you: ...
+Deadline: ...
+Official Portal Link: ...
+3. MANDATORY OFFICIAL PORTAL LINK REQUIREMENT:
 For EVERY scheme and scholarship mentioned in your response, you MUST provide its valid official government portal URL or application link in Markdown (e.g. [National Scholarship Portal](https://scholarships.gov.in) or **Official Application Link:** https://...). Restrict all verification strictly to official government portals (.gov.in, .nic.in, myscheme.gov.in). Never omit the application link for any scheme.`;
 
     try {
@@ -1490,7 +1537,7 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         body: JSON.stringify({
           message: promptMessage,
           history: [],
-          userProfile: currentUser
+          userProfile: profile
         })
       });
 
@@ -1506,12 +1553,12 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
       const candidateCentralSchemes = SCHEMES_DATABASE.filter(s => {
         const isCentral = s.governmentLevel === 'Central' || s.governmentLevel === 'All India';
         if (!isCentral) return false;
-        const evalRes = evaluateSchemeEligibility(s, currentUser);
+        const evalRes = evaluateSchemeEligibility(s, profile);
         return evalRes.unmetCriteria.length === 0;
       });
 
       // Extract strictly only those central schemes mentioned or identified in the AI reply
-      const onlyMatchedSchemes = matchSchemesFromAiResponse(reply, candidateCentralSchemes, currentUser);
+      const onlyMatchedSchemes = matchSchemesFromAiResponse(reply, candidateCentralSchemes, profile);
 
       // Add each matched central scheme to chatbot recommendations
       onlyMatchedSchemes.forEach(scheme => {
