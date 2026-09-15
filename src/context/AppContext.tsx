@@ -73,8 +73,10 @@ interface AppContextType {
   pendingChatbotPrompt: string | null;
   isAskingStateSchemes: boolean;
   stateChatbotAnswer: { state: string; text: string; timestamp: string } | null;
+  clearStateChatbotAnswer: () => void;
   isAskingCentralSchemes: boolean;
   centralChatbotAnswer: { text: string; timestamp: string } | null;
+  clearCentralChatbotAnswer: () => void;
   expiringIn3DaysSchemes: Array<{ scheme: Scheme; daysLeft: number; statusText: string }>;
   
   // Multi-Account Device Management
@@ -348,6 +350,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [stateChatbotAnswer, setStateChatbotAnswer] = useState<{ state: string; text: string; timestamp: string } | null>(null);
   const [isAskingCentralSchemes, setIsAskingCentralSchemes] = useState<boolean>(false);
   const [centralChatbotAnswer, setCentralChatbotAnswer] = useState<{ text: string; timestamp: string } | null>(null);
+
+  const clearStateChatbotAnswer = () => {
+    setStateChatbotAnswer(null);
+  };
+
+  const clearCentralChatbotAnswer = () => {
+    setCentralChatbotAnswer(null);
+  };
 
   const openAuthModal = (mode: 'login' | 'signup' = 'login') => {
     setAuthModalMode(mode);
@@ -1604,8 +1614,10 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
         pendingChatbotPrompt,
         isAskingStateSchemes,
         stateChatbotAnswer,
+        clearStateChatbotAnswer,
         isAskingCentralSchemes,
         centralChatbotAnswer,
+        clearCentralChatbotAnswer,
         expiringIn3DaysSchemes,
         // Multi-Account Device Management
         deviceAccounts,

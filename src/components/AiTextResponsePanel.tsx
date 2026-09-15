@@ -429,10 +429,12 @@ export const AiTextResponsePanel: React.FC<AiTextResponsePanelProps> = ({
           {onClear && (
             <button
               onClick={onClear}
-              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-white rounded-xl transition-colors cursor-pointer border border-transparent hover:border-stone-200"
-              title="Close AI evaluation"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-red-50 text-stone-600 hover:text-red-700 text-xs font-bold rounded-xl border border-stone-200 hover:border-red-300 shadow-2xs transition-all cursor-pointer"
+              title="Close or clear this schemes section"
+              aria-label="Close schemes section"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 text-stone-400 group-hover:text-red-600" />
+              <span>Close</span>
             </button>
           )}
         </div>

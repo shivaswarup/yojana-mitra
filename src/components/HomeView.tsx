@@ -26,14 +26,20 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     isAskingStateSchemes,
     askChatbotForStateSchemes,
     stateChatbotAnswer,
+    clearStateChatbotAnswer,
     isAskingCentralSchemes,
     askChatbotForCentralSchemes,
     centralChatbotAnswer,
+    clearCentralChatbotAnswer,
     searchQuery
   } = useApp();
 
   const [stateAiReply, setStateAiReply] = useState<string>('');
   const [centralAiReply, setCentralAiReply] = useState<string>('');
+
+  // Close / Collapse state for State and Central schemes panels
+  const [isStatePanelClosed, setIsStatePanelClosed] = useState<boolean>(false);
+  const [isCentralPanelClosed, setIsCentralPanelClosed] = useState<boolean>(false);
 
   // Active state selection for state government schemes:
   // When logged in, strictly locked to currentUser.state.
@@ -120,8 +126,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     return deduplicateSchemes(list);
   }, [activeStateName, effectiveProfile]);
 
+  // Handle Clear or Close for State Schemes
+  const handleClearStateSchemes = () => {
+    setIsStatePanelClosed(true);
+    setStateAiQueried(false);
+    setStateAiReply('');
+    setStateAiSchemes([]);
+    clearStateChatbotAnswer();
+  };
+
   // Handle Ask AI for State Schemes
   const handleAskStateAi = async () => {
+    setIsStatePanelClosed(false);
     setStateAiQueried(true);
     const result = await askChatbotForStateSchemes(activeStateName);
     if (result && result.reply) {
@@ -229,8 +245,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
     }).join('\n\n');
   }, [eligibleCentralPool, effectiveProfile]);
 
+  // Handle Clear or Close for Central Schemes
+  const handleClearCentralSchemes = () => {
+    setIsCentralPanelClosed(true);
+    setCentralAiQueried(false);
+    setCentralAiReply('');
+    setCentralAiSchemes([]);
+    clearCentralChatbotAnswer();
+  };
+
   // Handle Ask AI for Central Schemes
   const handleAskCentralAi = async () => {
+    setIsCentralPanelClosed(false);
     setCentralAiQueried(true);
     const result = await askChatbotForCentralSchemes();
     if (result && result.reply) {
@@ -306,8 +332,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
                   value={selectedState}
                   onChange={(e) => {
                     setSelectedState(e.target.value);
+                    setIsStatePanelClosed(false);
                     setStateAiQueried(false);
                     setStateAiSchemes([]);
+                    clearStateChatbotAnswer();
                   }}
                   className="bg-transparent font-bold text-amber-950 text-xs focus:outline-none cursor-pointer pr-1"
                 >
@@ -338,8 +366,36 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
           </div>
         </div>
 
-        {/* Immediate display of State Schemes in text format */}
-        {isAskingStateSchemes ? (
+        {/* State Schemes Display: Closed state vs Loading vs Active Panel */}
+        {isStatePanelClosed ? (
+          <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-6 sm:p-7 text-center space-y-3 animate-in fade-in duration-200">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto shadow-2xs">
+              <Landmark className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-stone-900">
+                Government of {activeStateName} Schemes Section Closed
+              </h3>
+              <p className="text-xs text-stone-600 max-w-md mx-auto">
+                Section cleared. Click below to run an AI evaluation of Government of {activeStateName} schemes for your profile.
+              </p>
+            </div>
+            <div className="flex items-center justify-center pt-2">
+              <button
+                onClick={() => {
+                  setIsStatePanelClosed(false);
+                  handleAskStateAi();
+                }}
+                disabled={isAskingStateSchemes}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3 text-amber-200" />
+                <span>Ask AI for {activeStateName} Schemes</span>
+              </button>
+            </div>
+          </div>
+        ) : isAskingStateSchemes ? (
           <div className="bg-amber-50/50 rounded-2xl border border-amber-200 p-8 text-center space-y-3">
             <Loader2 className="w-7 h-7 animate-spin text-amber-700 mx-auto" />
             <p className="text-xs font-bold text-amber-950">
@@ -356,11 +412,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
             stateName={activeStateName}
             relevantSchemes={stateAiSchemes.length > 0 ? stateAiSchemes : eligibleStatePool}
             discussPrompt={`Tell me more about active state welfare schemes and scholarships in ${activeStateName} for my profile.`}
-            onClear={() => {
-              setStateAiQueried(false);
-              setStateAiReply('');
-              setStateAiSchemes([]);
-            }}
+            onClear={handleClearStateSchemes}
           />
         )}
 
@@ -410,8 +462,36 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
           </div>
         </div>
 
-        {/* Immediate display of Central Schemes in text format */}
-        {isAskingCentralSchemes ? (
+        {/* Central Schemes Display: Closed state vs Loading vs Active Panel */}
+        {isCentralPanelClosed ? (
+          <div className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/50 p-6 sm:p-7 text-center space-y-3 animate-in fade-in duration-200">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center mx-auto shadow-2xs">
+              <Building className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-stone-900">
+                Central Government Schemes Section Closed
+              </h3>
+              <p className="text-xs text-stone-600 max-w-md mx-auto">
+                Section cleared. Click below to run an AI evaluation of Central Government schemes for your profile.
+              </p>
+            </div>
+            <div className="flex items-center justify-center pt-2">
+              <button
+                onClick={() => {
+                  setIsCentralPanelClosed(false);
+                  handleAskCentralAi();
+                }}
+                disabled={isAskingCentralSchemes}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3 text-emerald-200" />
+                <span>Ask AI for Central Schemes</span>
+              </button>
+            </div>
+          </div>
+        ) : isAskingCentralSchemes ? (
           <div className="bg-emerald-50/50 rounded-2xl border border-emerald-200 p-8 text-center space-y-3">
             <Loader2 className="w-7 h-7 animate-spin text-emerald-800 mx-auto" />
             <p className="text-xs font-bold text-emerald-950">
@@ -427,11 +507,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
             theme="emerald"
             relevantSchemes={centralAiSchemes.length > 0 ? centralAiSchemes : eligibleCentralPool}
             discussPrompt="Tell me more about Central Government schemes and national scholarships I qualify for."
-            onClear={() => {
-              setCentralAiQueried(false);
-              setCentralAiReply('');
-              setCentralAiSchemes([]);
-            }}
+            onClear={handleClearCentralSchemes}
           />
         )}
 
