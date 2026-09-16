@@ -83,6 +83,7 @@ export type SchemeCategory =
   | 'Employment'
   | 'Pension'
   | 'Health'
+  | 'Healthcare'
   | 'Business'
   | 'Housing'
   | 'Student Welfare'

@@ -86,13 +86,13 @@ export const ProfileView: React.FC = () => {
         {/* Stats Strip */}
         <div className="grid grid-cols-3 gap-3 pt-6 mt-6 border-t border-stone-100 text-center">
           <div 
-            onClick={() => setActiveTab('recommended')}
+            onClick={() => setActiveTab('schemes')}
             className="p-3 bg-stone-50 hover:bg-emerald-50 border border-stone-200 rounded-lg cursor-pointer transition-colors"
           >
             <div className="text-lg sm:text-2xl font-extrabold text-emerald-800">
               {recommendedSchemes.length}
             </div>
-            <div className="text-[11px] font-semibold text-stone-600 mt-0.5">Recommended Schemes</div>
+            <div className="text-[11px] font-semibold text-stone-600 mt-0.5">Eligible Schemes</div>
           </div>
 
           <div 

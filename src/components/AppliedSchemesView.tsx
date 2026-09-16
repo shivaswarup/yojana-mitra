@@ -232,10 +232,10 @@ export const AppliedSchemesView: React.FC<AppliedSchemesViewProps> = ({ onSelect
             </p>
           </div>
           <button
-            onClick={() => setActiveTab('recommended')}
+            onClick={() => setActiveTab('schemes')}
             className="px-4 py-2 text-xs font-bold bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg shadow-xs"
           >
-            Explore Recommended Schemes
+            Explore All Schemes
           </button>
         </div>
       )}

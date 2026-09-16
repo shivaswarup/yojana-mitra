@@ -3,21 +3,19 @@ import {
   Home, 
   CalendarClock, 
   BookOpen, 
-  Sparkles, 
   ClipboardCheck, 
-  LogOut,
-  ShieldCheck,
-  Building2
+  LogOut, 
+  ShieldCheck, 
+  Building2 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Sidebar: React.FC = () => {
   const { 
-    currentUser,
+    currentUser, 
     activeTab, 
     setActiveTab, 
     logout, 
-    recommendedSchemes, 
     appliedSchemes 
   } = useApp();
 
@@ -25,7 +23,6 @@ export const Sidebar: React.FC = () => {
     { id: 'home' as const, label: 'Home', icon: Home, badge: null },
     { id: 'deadlines' as const, label: 'Deadlines', icon: CalendarClock, badge: null },
     { id: 'schemes' as const, label: 'Schemes', icon: BookOpen, badge: null },
-    { id: 'recommended' as const, label: 'Recommended', icon: Sparkles, badge: recommendedSchemes.length > 0 ? `${recommendedSchemes.length}` : null },
     { id: 'applied' as const, label: 'Applied Schemes', icon: ClipboardCheck, badge: appliedSchemes.length > 0 ? `${appliedSchemes.length}` : null },
   ];
 

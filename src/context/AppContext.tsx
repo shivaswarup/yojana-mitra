@@ -504,27 +504,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         citizenProfile = snap.data() as UserProfile;
+        recordDeviceAccount({
+          id: citizenProfile.id,
+          email: citizenProfile.email,
+          name: citizenProfile.name,
+          avatar: citizenProfile.avatar,
+          provider: 'google',
+          state: citizenProfile.state
+        });
+        setCurrentUser(citizenProfile);
+        localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
+        setIsAuthModalOpen(false);
+        setIsOnboarding(false);
+        setActiveTab('home');
+        return;
       } else {
         citizenProfile = {
           id: uid,
           email: cleanEmail,
           name: cleanName,
           avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail.split('@')[0]}`,
-          age: 21,
+          age: 0,
           gender: 'male',
-          state: stateChoice || 'Telangana',
-          district: 'Hyderabad',
+          state: (stateChoice === 'Andhra Pradesh' || stateChoice === 'Telangana') ? stateChoice : 'Telangana',
+          district: '',
           areaType: 'Urban',
           maritalStatus: 'Single',
           highestEducation: 'Undergraduate (UG)',
           currentEducationStatus: 'Pursuing',
+          courseStream: '',
+          institutionName: '',
           isStudent: true,
           category: 'General',
           isDisability: false,
           isMinority: false,
-          annualFamilyIncome: 250000,
+          annualFamilyIncome: 0,
           employmentStatus: 'Student',
-          occupation: 'Student',
+          occupation: '',
           isFarmer: false,
           isBusinessOwner: false,
           isWomanEntrepreneur: false,
@@ -533,7 +549,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        await setDoc(docRef, sanitizeForFirestore(citizenProfile));
+        recordDeviceAccount({
+          id: citizenProfile.id,
+          email: citizenProfile.email,
+          name: citizenProfile.name,
+          avatar: citizenProfile.avatar,
+          provider: 'google',
+          state: citizenProfile.state
+        });
+        setCurrentUser(citizenProfile);
+        setIsAuthModalOpen(false);
+        setIsOnboarding(true);
+        return;
       }
     } catch (e) {
       citizenProfile = {
@@ -541,21 +568,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: cleanEmail,
         name: cleanName,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail.split('@')[0]}`,
-        age: 21,
+        age: 0,
         gender: 'male',
-        state: stateChoice || 'Telangana',
-        district: 'Hyderabad',
+        state: (stateChoice === 'Andhra Pradesh' || stateChoice === 'Telangana') ? stateChoice : 'Telangana',
+        district: '',
         areaType: 'Urban',
         maritalStatus: 'Single',
         highestEducation: 'Undergraduate (UG)',
         currentEducationStatus: 'Pursuing',
+        courseStream: '',
+        institutionName: '',
         isStudent: true,
         category: 'General',
         isDisability: false,
         isMinority: false,
-        annualFamilyIncome: 250000,
+        annualFamilyIncome: 0,
         employmentStatus: 'Student',
-        occupation: 'Student',
+        occupation: '',
         isFarmer: false,
         isBusinessOwner: false,
         isWomanEntrepreneur: false,
@@ -564,21 +593,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      setCurrentUser(citizenProfile);
+      setIsAuthModalOpen(false);
+      setIsOnboarding(true);
+      return;
     }
-
-    recordDeviceAccount({
-      id: citizenProfile.id,
-      email: citizenProfile.email,
-      name: citizenProfile.name,
-      avatar: citizenProfile.avatar,
-      provider: 'google',
-      state: citizenProfile.state
-    });
-
-    setCurrentUser(citizenProfile);
-    localStorage.setItem('ym_current_user', JSON.stringify(citizenProfile));
-    setIsAuthModalOpen(false);
-    setIsOnboarding(false);
   };
 
   // Listen to Firebase Auth state

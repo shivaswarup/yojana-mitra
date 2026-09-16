@@ -24,29 +24,7 @@ import { DeviceAccount } from '../types';
 
 const INDIAN_STATES = [
   'Telangana',
-  'Andhra Pradesh',
-  'Maharashtra',
-  'Uttar Pradesh',
-  'Karnataka',
-  'Tamil Nadu',
-  'Delhi',
-  'Bihar',
-  'Gujarat',
-  'Rajasthan',
-  'Kerala',
-  'West Bengal',
-  'Madhya Pradesh',
-  'Punjab',
-  'Haryana',
-  'Odisha',
-  'Assam',
-  'Jharkhand',
-  'Chhattisgarh',
-  'Uttarakhand',
-  'Himachal Pradesh',
-  'Goa',
-  'Jammu and Kashmir',
-  'Ladakh'
+  'Andhra Pradesh'
 ];
 
 export const AuthModal: React.FC = () => {
