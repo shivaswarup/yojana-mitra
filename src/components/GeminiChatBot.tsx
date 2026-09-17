@@ -445,8 +445,20 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
         })
       });
 
-      const data = await res.json();
-      const replyText = data.reply || (activeLanguage === 'telugu' ? 'సమాధానం రూపొందించడం సాధ్యం కాలేదు. దయచేసి అధికారిక ప్రభుత్వ పోర్టల్‌ను తనిఖీ చేయండి.' : 'No response generated from Gemini API.');
+      let replyText = '';
+      if (res.ok) {
+        const data = await res.json();
+        replyText = data.reply || (activeLanguage === 'telugu' ? 'సమాధానం రూపొందించడం సాధ్యం కాలేదు. దయచేసి అధికారిక ప్రభుత్వ పోర్టల్‌ను తనిఖీ చేయండి.' : 'No response generated from Gemini API.');
+      } else {
+        let errText = '';
+        try {
+          const errJson = await res.json();
+          errText = errJson.reply || errJson.error || errJson.message || '';
+        } catch {
+          errText = await res.text();
+        }
+        throw new Error(`Server HTTP ${res.status}: ${errText.slice(0, 100)}`);
+      }
 
       // Extract schemes matched in the reply or query that strictly match the user's profile
       const matched = extractMatchingSchemes(textToSend + ' ' + replyText, currentUser);
@@ -469,16 +481,48 @@ export const GeminiChatBot: React.FC<{ onSelectScheme?: (scheme: Scheme) => void
       };
 
       setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
-      console.warn('Gemini Chat notice:', error);
+    } catch (error: any) {
+      console.warn('Gemini Chat notice:', error?.message || error);
+      
+      // Resilient fallback using verified database matching
+      const matched = extractMatchingSchemes(textToSend, currentUser);
+      
+      let fallbackText = '';
+      if (matched.length > 0) {
+        matched.forEach(scheme => {
+          addChatbotRecommendation(
+            scheme,
+            `Recommended from verified registry for: "${textToSend.slice(0, 50)}"`,
+            textToSend
+          );
+        });
+
+        fallbackText = activeLanguage === 'telugu'
+          ? `మీ ప్రొఫైల్ మరియు ప్రశ్న ఆధారంగా ధృవీకరించబడిన అధికారిక పథకాలు:\n\n`
+          : `Here are active government schemes matching your profile and query:\n\n`;
+
+        matched.slice(0, 4).forEach((s, idx) => {
+          const benefit = s.financialBenefitAmount || (s.benefits && s.benefits[0]) || 'Direct Government Benefit';
+          const criteria = (s.eligibility && s.eligibility[0]) || s.shortDescription || 'Refer official notification';
+          const docs = (s.requiredDocuments && s.requiredDocuments.length > 0) ? s.requiredDocuments.slice(0, 3).join(', ') : 'Aadhaar, Income & Caste Certificates';
+          const portalName = s.officialSource || 'Official Government Portal';
+          const portalUrl = s.officialWebsite || 'https://www.myscheme.gov.in';
+
+          fallbackText += `${idx + 1}.\n**Scheme Name:** ${s.name}\n**Target Criteria:** ${criteria}\n**Financial Benefit:** ${benefit}\n**Documents Required:** ${docs}\n**Official Portal Link:** [${portalName}](${portalUrl})\n\n`;
+        });
+      } else {
+        fallbackText = activeLanguage === 'telugu'
+          ? 'ప్రస్తుతం AI సర్వర్‌ను చేరుకోవడం సాధ్యపడలేదు. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి లేదా హోమ్ పేజీలో ధృవీకరించబడిన పథకాలను పరిశీలించండి.'
+          : 'Unable to reach the AI server right now. If deploying on Vercel, ensure GEMINI_API_KEY is configured in Vercel settings and latest code is pushed to your repository.';
+      }
+
       setMessages(prev => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'model',
-          text: activeLanguage === 'telugu'
-            ? 'ప్రస్తుతం AI సర్వర్‌ను చేరుకోవడం సాధ్యపడలేదు. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి లేదా అధికారిక ప్రభుత్వ పోర్టల్స్ పరిశీలించండి.'
-            : 'Unable to reach the AI server right now. Please verify your connection or check official government portals directly.',
+          text: fallbackText,
+          matchedSchemes: matched,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);

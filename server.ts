@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 
 dotenv.config();
 
@@ -10,6 +9,25 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// Enable CORS for external/serverless requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Normalize request URLs in case Vercel rewrites strip the /api prefix
+app.use((req, res, next) => {
+  if (req.url && !req.url.startsWith('/api') && (req.url.startsWith('/ai') || req.url.startsWith('/health'))) {
+    req.url = '/api' + req.url;
+  }
+  next();
+});
 
 // Lazy / safe initialization of Gemini AI
 function getGenAI() {
@@ -787,6 +805,7 @@ Analyze which documents are ready and provide simple step-by-step instructions o
 // Setup Vite or Static File Serving
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -805,4 +824,10 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only launch HTTP listener if running outside Vercel Serverless environment
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
+export { app };
