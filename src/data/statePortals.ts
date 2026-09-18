@@ -63,17 +63,17 @@ export const STATE_OFFICIAL_PORTALS: Record<string, OfficialPortalInfo[]> = {
       name: 'JnanaBhumi AP Portal',
       url: 'https://jnanabhumi.ap.gov.in',
       domain: 'jnanabhumi.ap.gov.in',
-      category: 'Post-Matric Scholarships & Fee Support',
-      description: 'Official AP portal for Jagananna Vidya Deevena (100% fee reimbursement) and Vasathi Deevena (hostel & food support).',
-      targetSchemes: ['jnanabhumi', 'vidya deevena', 'vasathi deevena', 'post-matric scholarship', 'videshi vidya deevena']
+      category: 'Post-Matric Scholarships & Education Support',
+      description: 'Official Government of AP portal for Post-Matric Fee Reimbursement, Vasathi Deevena, Thalliki Vandanam, and Overseas Vidya Grants.',
+      targetSchemes: ['jnanabhumi', 'vidya deevena', 'vasathi deevena', 'thalliki vandanam', 'post-matric scholarship', 'videshi vidya']
     },
     {
-      name: 'AP Navasakam Citizen Portal',
+      name: 'AP Navasakam / Spandana Citizen Portal',
       url: 'https://navasakam2.apcfss.in',
       domain: 'navasakam2.apcfss.in',
       category: 'Direct Benefit Transfer Services',
-      description: 'Official Government of Andhra Pradesh single-window portal for social audit, smart cards, and DBT entitlement cards.',
-      targetSchemes: ['navasakam', 'cheyutha', 'aasara', 'ebc nestham', 'kapu nestham', 'sunna vaddi', 'rythu bharosa']
+      description: 'Official Government of Andhra Pradesh portal for citizen welfare audit, Annadata Sukhibhava, NTR Bharosa, Deepam 2.0, and DBT cards.',
+      targetSchemes: ['navasakam', 'annadata sukhibhava', 'ntr bharosa', 'deepam scheme', 'sunna vaddi', 'yuva galam']
     },
     {
       name: 'AP MeeSeva Portal',
@@ -84,12 +84,12 @@ export const STATE_OFFICIAL_PORTALS: Record<string, OfficialPortalInfo[]> = {
       targetSchemes: ['meeseva', 'caste certificate', 'income certificate', 'residence proof']
     },
     {
-      name: 'Dr. YSR Aarogyasri Health Care Trust',
+      name: 'Dr. NTR Vaidya Seva Trust',
       url: 'https://aarogyasri.ap.gov.in',
       domain: 'aarogyasri.ap.gov.in',
       category: 'Healthcare & Medical Cover',
-      description: 'Official cashless medical treatment portal covering comprehensive health procedures up to ₹25,00,000.',
-      targetSchemes: ['aarogyasri', 'ysr aarogyasri', 'health cover', 'cashless hospital']
+      description: 'Official cashless medical treatment portal covering comprehensive health procedures up to ₹25,00,000 across AP and network cities.',
+      targetSchemes: ['ntr vaidya seva', 'aarogyasri', 'health cover', 'cashless hospital']
     }
   ]
 };

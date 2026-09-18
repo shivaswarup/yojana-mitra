@@ -114,6 +114,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectScheme }) => {
   // Eligible pool of state schemes for active state matching user profile
   const eligibleStatePool = useMemo(() => {
     const list = SCHEMES_DATABASE.filter(s => {
+      // Strictly prevent Central/All India schemes from leaking into the State tab
+      if (s.governmentLevel === 'Central' || s.state === 'All India') return false;
+
       const stateMatch = s.state.toLowerCase() === activeStateName.toLowerCase() ||
         (s.eligibilityRules?.states?.some(st => st.toLowerCase() === activeStateName.toLowerCase()) ?? false);
       if (!stateMatch) return false;

@@ -1501,6 +1501,7 @@ For EVERY scheme and scholarship mentioned in your response, you MUST provide it
 
       // Find all state-related schemes strictly for this state that match user credentials
       const eligibleStateSchemes = SCHEMES_DATABASE.filter(s => {
+        if (s.governmentLevel === 'Central' || s.state === 'All India') return false;
         const isThisState = s.state.toLowerCase() === targetState.toLowerCase() || 
           (s.eligibilityRules?.states?.some(st => st.toLowerCase() === targetState.toLowerCase()) ?? false);
         if (!isThisState) return false;

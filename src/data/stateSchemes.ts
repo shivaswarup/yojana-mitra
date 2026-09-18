@@ -388,18 +388,247 @@ export const STATE_SCHEMES: Scheme[] = [
 
   // ===================== ANDHRA PRADESH =====================
   {
-    id: 'ap-jagananna-vidya-deevena',
-    name: 'Andhra Pradesh Jagananna Vidya Deevena (Complete Fee Reimbursement)',
-    slug: 'ap-jagananna-vidya-deevena',
+    id: 'ap-annadata-sukhibhava',
+    name: 'Andhra Pradesh Annadata Sukhibhava - PM KISAN Scheme',
+    slug: 'ap-annadata-sukhibhava',
+    shortDescription: 'Annual financial support of ₹20,000 per farmer family in Andhra Pradesh (integrating ₹6,000 PM-KISAN + ₹14,000 AP State Assistance).',
+    description: 'Flagship farmer welfare initiative launched by the Government of Andhra Pradesh (formerly YSR Rythu Bharosa) providing ₹20,000 annual financial aid directly to farmer bank accounts to cover seed, fertilizer, and crop cultivation expenses.',
+    category: 'Agriculture',
+    state: 'Andhra Pradesh',
+    governmentLevel: 'State',
+    department: 'Department of Agriculture & Cooperation, Government of Andhra Pradesh',
+    financialBenefitAmount: '₹20,000 per year (₹14,000 State + ₹6,000 PM-KISAN DBT)',
+    benefits: [
+      '₹20,000 annual direct cash transfer credited into farmer bank accounts in three seasonal installments',
+      'Extends coverage to both landholding farmers and tenant farmers holding CCRC cards',
+      'Free 9-hour daytime agricultural power supply and crop insurance protection'
+    ],
+    eligibility: [
+      'Farmer resident of Andhra Pradesh owning agricultural land or recognized tenant cultivator',
+      'Tenant farmers holding valid Crop Cultivator Rights Card (CCRC)',
+      'Registered on e-Crop portal with active Aadhaar DBT bank account'
+    ],
+    eligibilityRules: {
+      minAge: 18,
+      maxAge: 100,
+      states: ['Andhra Pradesh'],
+      requiresFarmer: true
+    },
+    requiredDocuments: [
+      'Pattadar Passbook / 1B Land record title',
+      'Crop Cultivator Rights Card (CCRC) for tenant cultivators',
+      'Aadhaar Card and Aadhaar-seeded Bank Passbook'
+    ],
+    applicationProcess: [
+      'Farmer registration through Rythu Seva Kendras / Village Secretariats',
+      'Social audit and verification via e-Crop and Navasakam portal',
+      'Direct DBT credit into beneficiary bank account'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://navasakam2.apcfss.in',
+    officialSource: 'Government of Andhra Pradesh, Agriculture Department',
+    lastUpdated: 'August 2026',
+    tags: ['andhra pradesh', 'ap', 'annadata sukhibhava', 'farmer', 'rythu bharosa', 'agriculture', 'dbt', 'super six']
+  },
+  {
+    id: 'ap-ntr-vaidya-seva',
+    name: 'Dr. NTR Vaidya Seva Universal Health Scheme',
+    slug: 'ap-ntr-vaidya-seva',
+    shortDescription: 'Cashless medical treatment up to ₹25,00,000 per family per year in empanelled corporate and government hospitals across AP and major cities.',
+    description: 'Dr. NTR Vaidya Seva (formerly Dr. YSR Aarogyasri) provides 100% cashless hospitalization up to ₹25 Lakhs per family annually covering 3,257 medical, surgical, oncology, and transplant procedures in network hospitals across Andhra Pradesh, Hyderabad, Bengaluru, and Chennai.',
+    category: 'Healthcare',
+    state: 'Andhra Pradesh',
+    governmentLevel: 'State',
+    department: 'Dr. NTR Vaidya Seva Trust, Government of Andhra Pradesh',
+    financialBenefitAmount: '₹25,00,000 Cashless Hospitalization per family per year + Post-operative recovery allowance',
+    benefits: [
+      'Complete cashless hospital coverage up to ₹25,00,000 for 3,257 notified medical procedures',
+      'Aarogya Aasara post-operative recuperative financial allowance of up to ₹5,000 per month',
+      'Access to top multi-specialty network hospitals in AP, Hyderabad, Bengaluru, and Chennai'
+    ],
+    eligibility: [
+      'Resident families of Andhra Pradesh with annual family income under ₹5 Lakhs',
+      'Holding AP Rice Card (White Ration Card) or NTR Vaidya Seva Health Card'
+    ],
+    eligibilityRules: {
+      minAge: 0,
+      maxAge: 100,
+      states: ['Andhra Pradesh'],
+      maxIncome: 500000
+    },
+    requiredDocuments: [
+      'Aadhaar Card of patient',
+      'AP Rice Card / NTR Vaidya Seva Card',
+      'Medical prescription or referral from government hospital/empanelled centre'
+    ],
+    applicationProcess: [
+      'Visit any empanelled network hospital in AP, Hyderabad, Bengaluru, or Chennai',
+      'Approach Vaidya Seva Mithra at the hospital helpdesk',
+      'Instant electronic pre-authorization and free cashless admission'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://aarogyasri.ap.gov.in',
+    officialSource: 'Dr. NTR Vaidya Seva Trust, Government of Andhra Pradesh',
+    lastUpdated: 'August 2026',
+    tags: ['andhra pradesh', 'ap', 'ntr vaidya seva', 'healthcare', 'aarogyasri', 'cashless hospital', 'health card']
+  },
+  {
+    id: 'ap-thalliki-vandanam',
+    name: 'Andhra Pradesh Thalliki Vandanam Scheme',
+    slug: 'ap-thalliki-vandanam',
+    shortDescription: 'Annual financial incentive of ₹15,000 for every school-going child deposited directly into the mother’s bank account under the Super Six initiative.',
+    description: 'Thalliki Vandanam is an education incentive scheme under the Andhra Pradesh Super Six welfare package (restructured from the earlier Amma Vodi) that provides ₹15,000 per year per student to the mother’s account for all eligible school-going children in the household.',
+    category: 'Scholarships',
+    state: 'Andhra Pradesh',
+    governmentLevel: 'State',
+    department: 'School Education Department, Government of Andhra Pradesh',
+    financialBenefitAmount: '₹15,000 per school-going child per year',
+    benefits: [
+      '₹15,000 direct benefit transfer credited into the mother’s Aadhaar-linked bank account',
+      'Applicable to all school-going children from Class 1 to 12 in the family',
+      'Supports school fees, uniform, stationery, and nutritional requirements'
+    ],
+    eligibility: [
+      'Mother or recognized guardian of student studying in Class 1 to Intermediate (12th)',
+      'Permanent resident of Andhra Pradesh',
+      'Enrolled in recognized government, aided, or private schools/colleges',
+      'Family annual income under ₹2.5 Lakhs (holding Rice Card)'
+    ],
+    eligibilityRules: {
+      minAge: 5,
+      maxAge: 19,
+      states: ['Andhra Pradesh'],
+      maxIncome: 250000,
+      requiresStudent: true
+    },
+    requiredDocuments: [
+      'Aadhaar Card of student and mother',
+      'White Ration Card / AP Rice Card',
+      'School Bonafide / Student Information System (UDISE) record',
+      'Mother’s Bank Account Passbook'
+    ],
+    applicationProcess: [
+      'School Headmaster verifies student enrollment and attendance on Child Info portal',
+      'Village / Ward Sachivalayam conducts social audit verification',
+      'Direct DBT credit by Andhra Pradesh Government into mother’s bank account'
+    ],
+    deadline: '31 October 2026',
+    deadlineDate: '2026-10-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://jnanabhumi.ap.gov.in',
+    officialSource: 'Department of School Education, Government of Andhra Pradesh',
+    lastUpdated: 'August 2026',
+    tags: ['andhra pradesh', 'ap', 'thalliki vandanam', 'amma vodi', 'education', 'school grant', 'super six']
+  },
+  {
+    id: 'ap-deepam-2-gas-scheme',
+    name: 'Andhra Pradesh Deepam 2.0 Scheme (3 Free LPG Cylinders)',
+    slug: 'ap-deepam-2-gas-scheme',
+    shortDescription: 'Free 3 LPG domestic cooking gas cylinders per year for eligible poor families in Andhra Pradesh under the Super Six guarantees.',
+    description: 'Launched by the Government of Andhra Pradesh under the Super Six initiative, Deepam 2.0 supplies 3 free domestic LPG cylinders annually (one cylinder every 4 months) through direct DBT subsidy reimbursement to eligible BPL households.',
+    category: 'Social Security',
+    state: 'Andhra Pradesh',
+    governmentLevel: 'State',
+    department: 'Civil Supplies & Consumer Affairs Department, Government of Andhra Pradesh',
+    financialBenefitAmount: '3 Free Domestic LPG Gas Cylinders per year (Full cost DBT subsidy)',
+    benefits: [
+      '3 free domestic LPG cylinder refills provided annually to beneficiary families',
+      'Direct subsidy reimbursement into bank account within 48 hours of gas delivery',
+      'Promotes smoke-free healthy kitchens and clean fuel access for women'
+    ],
+    eligibility: [
+      'Permanent resident of Andhra Pradesh',
+      'Valid AP White Ration Card / Rice Card',
+      'Active domestic LPG gas connection in the name of a female family member'
+    ],
+    eligibilityRules: {
+      minAge: 18,
+      maxAge: 90,
+      states: ['Andhra Pradesh']
+    },
+    requiredDocuments: [
+      'Aadhaar Card of LPG consumer',
+      'AP Rice Card / Ration Card',
+      'LPG Connection Consumer Passbook (HP, Bharat, or Indane)',
+      'Aadhaar-linked Bank Account'
+    ],
+    applicationProcess: [
+      'Link Aadhaar and Rice Card with your local LPG gas agency',
+      'Book standard domestic refill through regular agency or online portal',
+      'Refill subsidy is automatically refunded directly into bank account via DBT'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://spandana.ap.gov.in',
+    officialSource: 'Civil Supplies Department, Government of Andhra Pradesh',
+    lastUpdated: 'August 2026',
+    tags: ['andhra pradesh', 'ap', 'deepam scheme', 'lpg gas', 'free cylinder', 'super six', 'women']
+  },
+  {
+    id: 'ap-ntr-bharosa-pension',
+    name: 'Andhra Pradesh NTR Bharosa Social Security Pension Scheme',
+    slug: 'ap-ntr-bharosa-pension',
+    shortDescription: 'Monthly social security pension of ₹4,000 for senior citizens, widows, and weavers, and ₹6,000 for persons with disabilities (PwD) delivered at doorstep.',
+    description: 'NTR Bharosa (formerly YSR Pension Kanuka) is the enhanced social security pension scheme in Andhra Pradesh under which monthly pensions have been enhanced from ₹3,000 to ₹4,000 per month for old age, widows, weavers, and single women, and ₹6,000 for disabled citizens.',
+    category: 'Pension',
+    state: 'Andhra Pradesh',
+    governmentLevel: 'State',
+    department: 'Department of Social Welfare & SERP, Government of Andhra Pradesh',
+    financialBenefitAmount: '₹4,000/month (Old Age/Widows) | ₹6,000/month (PwD) | ₹15,000/month (Kidney dialysis/chronic)',
+    benefits: [
+      '₹4,000 monthly pension delivered directly at the beneficiary’s doorstep on the 1st of every month',
+      'Enhanced ₹6,000 monthly support for persons with severe disabilities',
+      'Financial dignity and reliable livelihood protection for senior citizens and destitute individuals'
+    ],
+    eligibility: [
+      'Resident of Andhra Pradesh',
+      'Old Age Pension: Age 60 years or above',
+      'Widow Pension: Widowed woman of any age holding death certificate of spouse',
+      'Disabled Pension: Minimum 40% disability certified under SADAREM',
+      'Total family income under ₹1.44 Lakh (Rural) or ₹1.20 Lakh (Urban)'
+    ],
+    eligibilityRules: {
+      minAge: 18,
+      maxAge: 100,
+      states: ['Andhra Pradesh']
+    },
+    requiredDocuments: [
+      'Aadhaar Card of beneficiary',
+      'White Ration Card / AP Rice Card',
+      'Age proof / SADAREM disability certificate (for PwD) / Spouse death certificate (for Widows)',
+      'Bank Account details'
+    ],
+    applicationProcess: [
+      'Apply at nearest Village / Ward Sachivalayam (Gram/Ward Secretariat)',
+      'Field verification by Welfare & Education Assistant',
+      'Sanction orders issued and pension disbursed on 1st of every month'
+    ],
+    deadline: 'Open Year Round',
+    deadlineDate: '2026-12-31',
+    isDeadlineApproaching: false,
+    officialWebsite: 'https://sspensions.ap.gov.in',
+    officialSource: 'Society for Elimination of Rural Poverty (SERP), Andhra Pradesh',
+    lastUpdated: 'August 2026',
+    tags: ['andhra pradesh', 'ap', 'ntr bharosa', 'pension', 'old age', 'widow', 'pwd', 'social security']
+  },
+  {
+    id: 'ap-vidya-deevena-reimbursement',
+    name: 'Andhra Pradesh Vidya Deevena (Complete Fee Reimbursement via JnanaBhumi)',
+    slug: 'ap-vidya-deevena-reimbursement',
     shortDescription: '100% full tuition fee reimbursement credited directly for ITI, Polytechnic, Degree, Engineering, and PG students in Andhra Pradesh.',
-    description: 'Flagship education welfare program of the Government of Andhra Pradesh providing 100% full tuition fee reimbursement (credited directly to the student’s mother’s bank account in quarterly installments) for students pursuing higher professional education.',
+    description: 'Flagship higher education welfare program of the Government of Andhra Pradesh providing 100% full tuition fee reimbursement directly for students pursuing polytechnic, engineering, pharmacy, degree, and postgraduate courses via the official JnanaBhumi portal.',
     category: 'Scholarships',
     state: 'Andhra Pradesh',
     governmentLevel: 'State',
     department: 'Social Welfare & Higher Education Department, Government of Andhra Pradesh',
-    financialBenefitAmount: '100% Full Tuition Fee Reimbursement paid quarterly',
+    financialBenefitAmount: '100% Full Tuition Fee Reimbursement paid directly to colleges/mothers',
     benefits: [
-      '100% Full Fee Reimbursement paid quarterly directly into the mother’s Aadhaar-linked bank account',
+      '100% Full Fee Reimbursement paid quarterly directly into bank account',
       'Zero tuition burden for polytechnic, degree, engineering, pharmacy, and postgraduate students',
       'Promotes educational attainment across underprivileged communities in Andhra Pradesh'
     ],
@@ -422,12 +651,12 @@ export const STATE_SCHEMES: Scheme[] = [
       'AP Rice Card / White Ration Card (or Income Certificate under ₹2.5 Lakhs)',
       'Integrated Caste Certificate issued via MeeSeva',
       'College Admission details and Jnanabhumi student ID',
-      'Mother’s Aadhaar-seeded Bank Account Passbook'
+      'Aadhaar-seeded Bank Account Passbook'
     ],
     applicationProcess: [
       'Student applies via College Principal / Nodal Officer on Jnanabhumi portal (jnanabhumi.ap.gov.in)',
       'Field verification completed by Village / Ward Sachivalayam staff',
-      'Sanctions approved and credited in quarterly cycles via DBT directly to mother’s account'
+      'Sanctions approved and credited in quarterly cycles via DBT'
     ],
     deadline: '15 November 2026',
     deadlineDate: '2026-11-15',
@@ -435,14 +664,14 @@ export const STATE_SCHEMES: Scheme[] = [
     officialWebsite: 'https://jnanabhumi.ap.gov.in',
     officialSource: 'Government of Andhra Pradesh, Social Welfare Dept',
     lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'scholarship', 'vidya deevena', 'fee reimbursement']
+    tags: ['andhra pradesh', 'ap', 'state scheme', 'scholarship', 'vidya deevena', 'fee reimbursement', 'jnanabhumi']
   },
   {
-    id: 'ap-jagananna-vasathi-deevena',
-    name: 'Andhra Pradesh Jagananna Vasathi Deevena (Hostel & Boarding Grant)',
-    slug: 'ap-jagananna-vasathi-deevena',
+    id: 'ap-vasathi-deevena-grant',
+    name: 'Andhra Pradesh Vasathi Deevena (Hostel & Boarding Grant via JnanaBhumi)',
+    slug: 'ap-vasathi-deevena-grant',
     shortDescription: 'Annual financial assistance of ₹20,000 for degree/engineering, ₹15,000 for polytechnic, and ₹10,000 for ITI students for food & hostel expenses.',
-    description: 'Jagananna Vasathi Deevena provides annual financial aid to meet boarding, lodging, and hostel expenses of college students from low-income families in Andhra Pradesh, credited in two installments into the mother’s account.',
+    description: 'Vasathi Deevena provides annual financial aid to meet boarding, lodging, and hostel expenses of college students from low-income families in Andhra Pradesh, credited in two installments into the mother’s account.',
     category: 'Scholarships',
     state: 'Andhra Pradesh',
     governmentLevel: 'State',
@@ -487,9 +716,9 @@ export const STATE_SCHEMES: Scheme[] = [
     tags: ['andhra pradesh', 'ap', 'state scheme', 'scholarship', 'vasathi deevena', 'hostel grant']
   },
   {
-    id: 'ap-jagananna-videshi-vidya-deevena',
-    name: 'Andhra Pradesh Jagananna Videshi Vidya Deevena (Overseas Study Grant)',
-    slug: 'ap-jagananna-videshi-vidya-deevena',
+    id: 'ap-videshi-vidya-scheme',
+    name: 'Andhra Pradesh Overseas Study Grant (JnanaBhumi Videshi Vidya)',
+    slug: 'ap-videshi-vidya-scheme',
     shortDescription: 'Financial grant up to ₹1.25 Crore for SC, ST, BC, Minority, and EWS students securing admission in top 100 QS-ranked global universities.',
     description: 'The Government of Andhra Pradesh sanctions financial grants up to ₹1.25 Crore (100% of tuition and living fees for top 50 QS universities, and up to ₹50 Lakhs for top 51–100 universities) for meritorious underprivileged students pursuing Master’s or PhD degrees abroad.',
     category: 'Scholarships',
@@ -538,244 +767,59 @@ export const STATE_SCHEMES: Scheme[] = [
     tags: ['andhra pradesh', 'ap', 'state scheme', 'overseas scholarship', 'videshi vidya', 'foreign studies']
   },
   {
-    id: 'ap-ysr-cheyutha',
-    name: 'Andhra Pradesh YSR Cheyutha Scheme for Women Livelihoods',
-    slug: 'ap-ysr-cheyutha',
-    shortDescription: 'Financial assistance of ₹18,750 per year (total ₹75,000 over 4 years) for SC, ST, BC, and Minority women aged 45 to 60 years.',
-    description: 'YSR Cheyutha is a dedicated women-empowerment program in Andhra Pradesh providing ₹18,750 annually to SC, ST, BC, and Minority women aged 45-60 to establish small businesses, dairy units, and retail shops through tie-ups with Amul, ITC, HUL, and P&G.',
-    category: 'Women',
+    id: 'ap-yuva-galam-unemployment-aid',
+    name: 'Andhra Pradesh Yuva Galam Unemployment Allowance Scheme',
+    slug: 'ap-yuva-galam-unemployment-aid',
+    shortDescription: 'Monthly financial assistance of ₹3,000 per month for educated unemployed youth in Andhra Pradesh to support skill development and competitive exam preparation.',
+    description: 'Part of the Super Six welfare agenda of the Government of Andhra Pradesh, Yuva Galam provides ₹3,000 per month to eligible unemployed diploma, degree, and postgraduate youths in AP to cover skill training and job application expenses.',
+    category: 'Employment',
     state: 'Andhra Pradesh',
     governmentLevel: 'State',
-    department: 'Department of Village and Ward Sachivalayam & BC Welfare, Andhra Pradesh',
-    financialBenefitAmount: '₹18,750 per year (₹75,000 over 4 years) + Technical business support',
+    department: 'Skill Development & Youth Welfare Department, Government of Andhra Pradesh',
+    financialBenefitAmount: '₹3,000 per month direct allowance',
     benefits: [
-      '₹18,750 annual direct cash transfer to woman’s bank account',
-      'End-to-end guidance to set up grocery stores, dairy cattle units, or poultry farms',
-      'Access to low-interest bank linkage credit'
+      '₹3,000 per month direct stipend credited into candidate bank account',
+      'Free industry certification and placement training via AP Skill Development Corporation (APSSDC)',
+      'Financial support during competitive exam coaching and job searches'
     ],
     eligibility: [
-      'Resident woman citizen of Andhra Pradesh',
-      'Age between 45 and 60 years',
-      'Belonging to SC, ST, BC, or Minority categories',
-      'Family income within rural/urban BPL limits (under ₹1.44 Lakhs rural, ₹1.2 Lakhs urban)'
-    ],
-    eligibilityRules: {
-      minAge: 45,
-      maxAge: 60,
-      states: ['Andhra Pradesh'],
-      genders: ['female'],
-      categories: ['SC', 'ST', 'OBC', 'Minority'],
-      maxIncome: 200000
-    },
-    requiredDocuments: [
-      'Aadhaar Card of applicant',
-      'Integrated Caste Certificate',
-      'AP Rice Card / FSC / Income Certificate',
-      'Aadhaar-linked Bank Passbook'
-    ],
-    applicationProcess: [
-      'Apply at nearest Village / Ward Sachivalayam (Grama/Ward Secretariat)',
-      'Social audit list displayed for public verification',
-      'DBT released by Chief Minister directly to bank account'
-    ],
-    deadline: 'Open Year Round',
-    deadlineDate: '2026-12-31',
-    isDeadlineApproaching: false,
-    officialWebsite: 'https://navasakam2.apcfss.in',
-    officialSource: 'Government of Andhra Pradesh, BC & Social Welfare Dept',
-    lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'women', 'cheyutha', 'livelihood', 'dbt']
-  },
-  {
-    id: 'ap-ysr-rythu-bharosa',
-    name: 'Andhra Pradesh YSR Rythu Bharosa - PM KISAN Scheme',
-    slug: 'ap-ysr-rythu-bharosa',
-    shortDescription: 'Annual financial support of ₹13,500 per farmer family in Andhra Pradesh for crop cultivation inputs and tenant farmers.',
-    description: 'YSR Rythu Bharosa provides financial assistance of ₹13,500 per year (integrating ₹6,000 PM-KISAN with ₹7,500 state grant) to landowning farmers and tenant farmers belonging to SC, ST, BC, and Minority communities in Andhra Pradesh.',
-    category: 'Agriculture',
-    state: 'Andhra Pradesh',
-    governmentLevel: 'State',
-    department: 'Department of Agriculture & Cooperation, Government of Andhra Pradesh',
-    financialBenefitAmount: '₹13,500 per year in 3 installments (₹7,500 + ₹4,000 + ₹2,000)',
-    benefits: [
-      '₹13,500 annual input grant directly credited into bank account',
-      'Includes tenant farmers holding Crop Cultivator Rights Card (CCRC)',
-      'Free 9-hour daytime agricultural power and free crop insurance (YSR Free Crop Insurance)'
-    ],
-    eligibility: [
-      'Farmer resident of Andhra Pradesh owning agricultural land or recognized tenant farmer',
-      'Tenant farmers must belong to SC, ST, BC, or Minority communities'
+      'Resident youth of Andhra Pradesh aged 18 to 35 years',
+      'Minimum qualification of Polytechnic Diploma, ITI, Graduate Degree, or PG',
+      'Currently unemployed and registered with AP Employment Exchange',
+      'Family annual income under ₹2.5 Lakhs'
     ],
     eligibilityRules: {
       minAge: 18,
-      maxAge: 100,
-      states: ['Andhra Pradesh']
-    },
-    requiredDocuments: [
-      'Pattadar Passbook / Land record title',
-      'Crop Cultivator Rights Card (CCRC) for tenant farmers',
-      'Aadhaar Card and Bank Passbook'
-    ],
-    applicationProcess: [
-      'Farmer registration through Rythu Bharosa Kendras (RBKs) at village level',
-      'Social audit and eligibility display on RBK bulletin boards',
-      'DBT credited in three installments during Kharif, Rabi, and Sankranti'
-    ],
-    deadline: 'Open Year Round',
-    deadlineDate: '2026-12-31',
-    isDeadlineApproaching: false,
-    officialWebsite: 'https://navasakam2.apcfss.in',
-    officialSource: 'Government of Andhra Pradesh, Agriculture Department',
-    lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'agriculture', 'farmer', 'rythu bharosa', 'dbt']
-  },
-  {
-    id: 'ap-ysr-aarogyasri',
-    name: 'Dr. YSR Aarogyasri Universal Health Scheme',
-    slug: 'ap-ysr-aarogyasri',
-    shortDescription: 'Cashless medical treatment up to ₹25,00,000 per family per year in empanelled corporate and government hospitals across AP and neighbouring states.',
-    description: 'Dr. YSR Aarogyasri provides complete cashless treatment up to ₹25 Lakhs per family annually covering 3,257 medical, surgical, oncology, and transplant procedures in network hospitals located in Andhra Pradesh, Hyderabad, Bengaluru, and Chennai.',
-    category: 'Healthcare',
-    state: 'Andhra Pradesh',
-    governmentLevel: 'State',
-    department: 'Dr. YSR Aarogyasri Health Care Trust, Government of Andhra Pradesh',
-    financialBenefitAmount: '₹25,00,000 Cashless Hospitalization per family per year + Aarogya Aasara post-op allowance',
-    benefits: [
-      'Cashless hospital coverage up to ₹25,00,000 for 3,257 procedures',
-      'YSR Aarogya Aasara allowance of up to ₹5,000/month during post-surgery recovery rest period',
-      'Network hospitals in AP, Hyderabad, Bengaluru, and Chennai'
-    ],
-    eligibility: [
-      'Resident families of Andhra Pradesh with annual family income under ₹5 Lakhs',
-      'Holding AP Rice Card (White Ration Card) or Aarogyasri Card'
-    ],
-    eligibilityRules: {
-      minAge: 0,
-      maxAge: 100,
+      maxAge: 35,
       states: ['Andhra Pradesh'],
-      maxIncome: 500000
+      maxIncome: 250000,
+      minEducation: ['Diploma/ITI', 'Undergraduate (UG)', 'Postgraduate (PG)']
     },
     requiredDocuments: [
-      'Aadhaar Card of patient',
-      'AP Rice Card / Aarogyasri Card',
-      'Doctor prescription / referral from government hospital or network centre'
-    ],
-    applicationProcess: [
-      'Visit any empanelled hospital in AP, Hyderabad, Bengaluru, or Chennai',
-      'Contact Aarogya Mithra at the hospital helpdesk',
-      'Instant electronic pre-authorization and free cashless admission'
-    ],
-    deadline: 'Open Year Round',
-    deadlineDate: '2026-12-31',
-    isDeadlineApproaching: false,
-    officialWebsite: 'https://aarogyasri.ap.gov.in',
-    officialSource: 'Dr. YSR Aarogyasri Health Care Trust, Government of Andhra Pradesh',
-    lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'healthcare', 'aarogyasri', 'cashless hospital']
-  },
-  {
-    id: 'ap-ysr-kapu-nestham',
-    name: 'Andhra Pradesh YSR Kapu Nestham Scheme',
-    slug: 'ap-ysr-kapu-nestham',
-    shortDescription: 'Financial grant of ₹15,000 per year (total ₹75,000) for women belonging to Kapu, Balija, Telaga, and Ontari communities aged 45–60.',
-    description: 'YSR Kapu Nestham is an economic assistance scheme that provides ₹15,000 annually to poor women belonging to Kapu, Balija, Telaga, and Ontari communities aged 45 to 60 years to enhance their business livelihood and financial self-sufficiency.',
-    category: 'Women',
-    state: 'Andhra Pradesh',
-    governmentLevel: 'State',
-    department: 'Backward Classes Welfare Department, Government of Andhra Pradesh',
-    financialBenefitAmount: '₹15,000 per year (₹75,000 over 5 years)',
-    benefits: [
-      '₹15,000 annual direct cash transfer to beneficiary bank account',
-      'Promotes micro-entrepreneurship and household financial security',
-      'No collateral or repayment requirement'
-    ],
-    eligibility: [
-      'Woman resident of Andhra Pradesh aged between 45 and 60 years',
-      'Belonging to Kapu, Balija, Telaga, or Ontari communities',
-      'Family income not exceeding ₹1.44 Lakhs (Rural) or ₹1.20 Lakhs (Urban)',
-      'Total family land holding less than 3 acres wetland or 10 acres dryland'
-    ],
-    eligibilityRules: {
-      minAge: 45,
-      maxAge: 60,
-      states: ['Andhra Pradesh'],
-      genders: ['female'],
-      maxIncome: 200000
-    },
-    requiredDocuments: [
-      'Aadhaar Card showing AP residence',
-      'Kapu/Balija/Telaga/Ontari Community Certificate',
-      'AP Rice Card / FSC / Income Certificate',
+      'Aadhaar Card of applicant',
+      'Educational Degree / Diploma Certificate and Marks Memo',
+      'AP Employment Exchange registration card',
       'Aadhaar-linked Bank Passbook'
     ],
     applicationProcess: [
-      'Apply at Village / Ward Sachivalayam (Grama/Ward Secretariat)',
-      'Social audit by secretariat staff and validation in Navasakam portal',
-      'Sanctioned amount credited directly to bank account'
+      'Register on AP Skill / Spandana Portal',
+      'Verification of degree and unemployment status',
+      'Monthly allowance credited directly to account'
     ],
     deadline: 'Open Year Round',
     deadlineDate: '2026-12-31',
     isDeadlineApproaching: false,
-    officialWebsite: 'https://navasakam2.apcfss.in',
-    officialSource: 'Government of Andhra Pradesh, BC Welfare Dept',
+    officialWebsite: 'https://apssdc.in',
+    officialSource: 'AP Skill Development Corporation, Government of Andhra Pradesh',
     lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'women', 'kapu nestham', 'livelihood']
+    tags: ['andhra pradesh', 'ap', 'yuva galam', 'unemployment allowance', 'youth', 'super six', 'employment']
   },
   {
-    id: 'ap-ysr-ebc-nestham',
-    name: 'Andhra Pradesh YSR EBC Nestham Scheme',
-    slug: 'ap-ysr-ebc-nestham',
-    shortDescription: 'Financial grant of ₹15,000 per year (total ₹45,000) for poor women belonging to Economically Backward Upper Castes aged 45–60.',
-    description: 'YSR EBC Nestham provides financial assistance of ₹15,000 per year for three years to economically backward women belonging to upper castes (Brahmin, Arya Vysya, Kshatriya, Reddy, Kamma, Velama, and other general communities) aged 45 to 60 years in Andhra Pradesh.',
-    category: 'Women',
-    state: 'Andhra Pradesh',
-    governmentLevel: 'State',
-    department: 'Backward Classes Welfare & General Administration Dept, Government of Andhra Pradesh',
-    financialBenefitAmount: '₹15,000 per year (₹45,000 over 3 years)',
-    benefits: [
-      'Direct cash transfer of ₹15,000 annually into the woman’s Aadhaar-linked account',
-      'Economic security for poor upper-caste women without state pensions',
-      'Zero intermediaries via Village/Ward Sachivalayam system'
-    ],
-    eligibility: [
-      'Woman domiciled in Andhra Pradesh aged 45 to 60 years',
-      'Belonging to Economically Backward Classes (Upper-Caste General categories)',
-      'Family income below ₹1.44 Lakhs (Rural) / ₹1.20 Lakhs (Urban)',
-      'Not receiving any other government pension'
-    ],
-    eligibilityRules: {
-      minAge: 45,
-      maxAge: 60,
-      states: ['Andhra Pradesh'],
-      genders: ['female'],
-      categories: ['EWS', 'General'],
-      maxIncome: 200000
-    },
-    requiredDocuments: [
-      'Aadhaar Card of beneficiary',
-      'Income Certificate issued by Tahsildar (under EBC limits)',
-      'Integrated Caste / Community Certificate',
-      'Bank Account Passbook linked to Aadhaar'
-    ],
-    applicationProcess: [
-      'Apply at Village / Ward Sachivalayam',
-      'Verification by Welfare and Education Assistant',
-      'Direct transfer to bank account upon state publication'
-    ],
-    deadline: 'Open Year Round',
-    deadlineDate: '2026-12-31',
-    isDeadlineApproaching: false,
-    officialWebsite: 'https://navasakam2.apcfss.in',
-    officialSource: 'Government of Andhra Pradesh, BC Welfare Dept',
-    lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'women', 'ebc nestham', 'general category']
-  },
-  {
-    id: 'ap-ysr-sunna-vaddi',
-    name: 'Andhra Pradesh YSR Sunna Vaddi (Zero Interest SHG Loans)',
-    slug: 'ap-ysr-sunna-vaddi',
+    id: 'ap-sunna-vaddi-dwcra',
+    name: 'Andhra Pradesh Sunna Vaddi (Zero Interest DWCRA Loans)',
+    slug: 'ap-sunna-vaddi-dwcra',
     shortDescription: '100% full interest subvention for DWCRA Self Help Group (SHG) women on bank loans up to ₹5,00,000 in Andhra Pradesh.',
-    description: 'YSR Sunna Vaddi ensures zero interest on bank loans taken by DWCRA Self Help Groups in Andhra Pradesh. The state government directly reimburses the entire bank interest amount into the SHG members’ accounts, ensuring zero interest burden on women entrepreneurs.',
+    description: 'Sunna Vaddi ensures zero interest on bank loans taken by DWCRA Self Help Groups in Andhra Pradesh. The state government directly reimburses the entire bank interest amount into the SHG members’ accounts, ensuring zero interest burden on women entrepreneurs.',
     category: 'Women',
     state: 'Andhra Pradesh',
     governmentLevel: 'State',
@@ -798,19 +842,20 @@ export const STATE_SCHEMES: Scheme[] = [
     },
     requiredDocuments: [
       'SHG Group Registration details and Member Aadhaar Cards',
-      'Bank Loan Passbook showing regular repayment record',
-      'AP Rice Card'
+      'SHG Bank Loan Passbook showing regular repayments',
+      'Rice Card / FSC'
     ],
     applicationProcess: [
-      'Automatic compilation through SERP / MEPMA banking transaction portal',
-      'Direct benefit transfer of the calculated interest amount credited annually'
+      'SHG applies through Village Organization (VO) / Slum Level Federation (SLF)',
+      'Bank submits repayment and interest claim to SERP/MEPMA',
+      'Government disburses 100% interest subsidy directly to SHG account'
     ],
     deadline: 'Open Year Round',
     deadlineDate: '2026-12-31',
     isDeadlineApproaching: false,
     officialWebsite: 'https://navasakam2.apcfss.in',
-    officialSource: 'SERP, Government of Andhra Pradesh',
+    officialSource: 'Society for Elimination of Rural Poverty (SERP), Andhra Pradesh',
     lastUpdated: 'August 2026',
-    tags: ['andhra pradesh', 'ap', 'state scheme', 'women', 'dwcra', 'sunna vaddi', 'zero interest']
+    tags: ['andhra pradesh', 'ap', 'sunna vaddi', 'dwcra', 'women', 'shg', 'interest free loan']
   }
 ];
